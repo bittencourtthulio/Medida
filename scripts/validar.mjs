@@ -9,6 +9,8 @@ ctx.window = ctx; vm.createContext(ctx);
 const rodar = (f) => vm.runInContext(readFileSync(f, 'utf8'), ctx, { filename: f });
 
 rodar('js/core.js');
+rodar('js/areas.js');
+rodar('js/termos.js');
 rodar('js/manifest.js');
 
 const erros = [];
@@ -17,13 +19,14 @@ const so = process.argv.slice(2);
 const arquivos = so.length ? [] : readdirSync('js/calculadoras').filter(f => f.endsWith('.js') && !f.startsWith('_')).map(f => f.slice(0, -3));
 for (const a of arquivos) if (!ctx.CALCULADORAS_ARQUIVOS.includes(a)) erro(a, 'arquivo existe mas não está em js/manifest.js (não aparece no dashboard)');
 
-const AREAS = ['Posicionamento', 'Aquisição', 'Conversão', 'Entrega e Operação', 'Finanças', 'Retenção e Expansão', 'Produtos e Inovação', 'Tecnologia e IA'];
+const AREAS = ctx.AREAS.map(a => a.nome);
 for (const id of (so.length ? so : ctx.CALCULADORAS_ARQUIVOS)) {
   const antes = ctx.CALCULADORAS.length;
   try { rodar(`js/calculadoras/${id}.js`); } catch (e) { erro(id, 'falha ao carregar: ' + e.message); continue; }
   const c = ctx.CALCULADORAS[antes];
   if (!c) { erro(id, 'não chamou registrar()'); continue; }
   if (!AREAS.includes(c.categoria)) erro(id, `categoria "${c.categoria}" inválida; use uma de: ${AREAS.join(', ')}`);
+  if (!ctx.TERMOS[c.id]) erro(id, 'falta a linha em js/termos.js (palavras e perguntas que levam a esta calculadora)');
   if (c.id !== id) erro(id, `id "${c.id}" diferente do nome do arquivo`);
   for (const k of ['nome', 'categoria', 'descricao']) if (!c[k] || typeof c[k] !== 'string') erro(id, `falta "${k}"`);
   if (!Array.isArray(c.campos) || !c.campos.length) { erro(id, 'falta "campos"'); continue; }

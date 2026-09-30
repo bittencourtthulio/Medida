@@ -12,16 +12,14 @@
 </head>
 <body>
 <div id="boot" aria-label="Carregando"><svg viewBox="0 0 180 60"><line x1="0" x2="180" y1="40" y2="40"/><path pathLength="1" d="M4 52C40 52 60 46 86 30S140 6 176 6"/></svg></div>
-<header class="top">
+<header class="top" id="topAuth">
   <div class="wrap in">
     <a class="brand" href="index.html"><span class="logo"></span><span id="nome">Medida</span></a>
     <span class="sp"></span>
-    <span class="user" id="user" hidden></span>
-    <button class="btn ghost sm" id="sair" hidden>Sair</button>
   </div>
 </header>
 
-<main class="page">
+<main class="page" id="authWrap">
   <!-- acesso -->
   <section id="auth" class="auth" hidden>
     <div class="card">
@@ -45,18 +43,37 @@
       <p class="hint" style="margin-top:12px;text-align:center"><a href="#" id="esqueci">Esqueci minha senha</a></p>
     </div>
   </section>
+</main>
 
-  <!-- dashboard -->
-  <section id="home" hidden>
-    <h1>Suas calculadoras</h1>
-    <p class="sub">Escolha uma, informe seus números e receba o veredito. Seus números não saem do navegador.</p>
-    <div id="catalogo"></div>
-  </section>
+<div id="shell" hidden>
+<aside class="side" id="side" aria-label="Menu">
+  <a class="brand" href="#/"><span class="logo"></span>Medida</a>
+  <button class="buscar" id="abrirBusca" type="button"><span>Buscar calculadoras</span><kbd class="k">Ctrl K</kbd></button>
+  <nav>
+    <a href="#/" data-nav="home">Início</a>
+    <div class="side-h">Áreas</div>
+    <div id="navAreas"></div>
+  </nav>
+  <div class="side-foot"><span id="user"></span><button class="btn ghost sm" id="sair" type="button">Sair</button></div>
+</aside>
+<div id="scrim"></div>
+<div class="main">
+<header class="bar">
+  <button class="btn ghost sm" id="menu" type="button" aria-label="Abrir menu">Menu</button>
+  <span class="crumb" id="crumb"></span>
+  <button class="btn ghost sm" id="abrirBusca2" type="button">Buscar</button>
+</header>
+<main class="page">
+  <!-- início: chat + sugestões + áreas -->
+  <section id="home" hidden></section>
+
+  <!-- área -->
+  <section id="area" hidden></section>
 
   <!-- calculadora -->
   <section id="calc" hidden>
     <div class="solo-print print-head"><span class="brand"><span class="logo"></span>Medida</span><span id="pData"></span></div>
-    <a class="back" href="#/">← Todas as calculadoras</a>
+    <a class="back" id="back" href="#/">← Todas as calculadoras</a>
     <div class="head">
       <div class="t"><h1 id="cNome"></h1><p class="sub" id="cDesc"></p></div>
       <button class="btn sem-print" id="pdf" type="button">⬇ Salvar PDF</button>
@@ -73,8 +90,20 @@
     <p class="solo-print print-foot">Relatório gerado na Medida, veredito de indicadores para SaaS: <span id="pUrl"></span>. Os números foram informados por quem gerou o relatório e ficam só no navegador dele.</p>
   </section>
 </main>
+</div>
+</div>
+
+<div id="palette" hidden>
+  <div class="pal" role="dialog" aria-label="Buscar calculadoras">
+    <input id="pq" type="text" placeholder="Busque por assunto: churn, caixa, preço, tráfego..." autocomplete="off" aria-label="Buscar">
+    <div id="pr" role="listbox"></div>
+    <div class="pal-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> navegar</span><span><kbd>Enter</kbd> abrir</span><span><kbd>Esc</kbd> fechar</span></div>
+  </div>
+</div>
 
 <script src="js/config.js"></script>
+<script src="js/areas.js"></script>
+<script src="js/termos.js"></script>
 <script src="js/core.js"></script>
 <script src="js/manifest.js"></script>
 <script type="module" src="js/auth.js"></script>

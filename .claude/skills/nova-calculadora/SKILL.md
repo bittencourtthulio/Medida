@@ -12,7 +12,7 @@ Não mexa em `app.js`, `index.html` ou CSS: dashboard, formulário, diagnóstico
 
 1. Escolha o `id` (kebab-case, igual ao nome do arquivo) e a `categoria`, que é uma das 8 áreas do DNA EXPX (o validador recusa outra): **Posicionamento, Aquisição, Conversão, Entrega e Operação, Finanças, Retenção e Expansão, Produtos e Inovação, Tecnologia e IA**. Desempate: a área dona do número que muda se a calculadora der certo. Tecnologia e IA quase nunca é a dona: o veredito deve terminar em margem, custo, capacidade ou receita.
 2. Crie `js/calculadoras/<id>.js` a partir do modelo abaixo. Leia `churn.js` ou `ponto-equilibrio.js` como referência de tom e tamanho.
-3. Adicione `'<id>'` ao array em `js/manifest.js`, no grupo da sua área.
+3. Adicione `'<id>'` ao array em `js/manifest.js`, no grupo da sua área, e uma linha em `js/termos.js` com as palavras e perguntas que levam a ela (sinônimos, siglas, dúvidas do jeito que o usuário fala). É isso que alimenta a busca (Ctrl K) e o chat do início; sem a linha, o validador reprova.
 4. Rode `node scripts/validar.mjs <id>` (só o seu arquivo) e depois `node scripts/validar.mjs` (tudo). Corrija até passar. Ele testa o contrato com os valores padrão e com tudo zerado.
 5. (Opcional) Abra `app.html` por um servidor local (`python3 -m http.server`) e confira a tela.
 

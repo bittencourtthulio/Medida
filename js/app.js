@@ -1,14 +1,14 @@
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const reduzMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let modo = 'entrar';
   let atual = null;
+  let usuario = null;
 
   document.title = APP_CONFIG.NOME;
-  $('nome').textContent = APP_CONFIG.NOME;
 
   /* ---------- acesso ---------- */
-  let usuario = null;
   function msg(tipo, txt) { const m = $('authMsg'); m.hidden = !txt; m.className = 'msg ' + tipo; m.textContent = txt || ''; }
 
   function setModo(m) {
@@ -39,20 +39,180 @@
     if (!$('email').value) return msg('bad', 'Digite seu e-mail acima e clique de novo.');
     tenta(async () => { await Auth.recuperar($('email').value); msg('good', 'Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha.'); });
   };
-  $('sair').onclick = () => { Auth.sair(); location.hash = ''; };
+  $('sair').onclick = () => { Auth.sair(); conversa.length = 0; painelAtual = null; location.hash = ''; };
 
-  /* ---------- dashboard ---------- */
-  function catalogo() {
-    const porCat = {};
-    CALCULADORAS.forEach(c => (porCat[c.categoria] = porCat[c.categoria] || []).push(c));
-    $('catalogo').innerHTML = Object.entries(porCat).map(([cat, cs]) =>
-      `<div class="cat">${esc(cat)}</div><div class="list">` + cs.map(c =>
-        `<a class="item" href="#/calc/${esc(c.id)}"><b>${esc(c.nome)}</b><span class="d">${esc(c.descricao)}</span></a>`).join('') + '</div>').join('');
+  /* ---------- busca por assunto (sem IA): palavras-chave, radicais e pesos ---------- */
+  const STOP = new Set(('a o as os um uma uns umas de do da dos das em no na nos nas por para com sem que qual quais como meu minha meus minhas ' +
+    'seu sua seus suas eu voce ser esta estao tem ter sao preciso precisar quero queria saber descobrir entender quanto quantos quantas onde ' +
+    'quando vale pena e ou ao aos mais muito muita ja nao se me isso esse essa este desse dessa tenho estou fazer posso devo vou ver sobre ' +
+    'nosso nossa nossos nossas vamos pode podem deve dos ate mas').split(' '));
+  const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  // radical: tira o plural e corta (custo/custa/custos → cust; equipe ≠ equilíbrio → equip/equil)
+  const stem = w => { if (w.length >= 5 && w.endsWith('s')) w = w.slice(0, -1); return w.length >= 6 ? w.slice(0, 5) : w.length === 5 ? w.slice(0, 4) : w; };
+  const tokens = s => norm(s).split(' ').filter(w => w && !STOP.has(w) && (w.length >= 3 || w === 'ia'));
+  const conjunto = s => new Set(tokens(s).map(stem));
+  // palavras-chave com contagem: termo repetido nas palavras da calculadora pesa mais (até +2)
+  function contagemTermos(t) { const m = new Map(); tokens(t).map(stem).forEach(w => m.set(w, (m.get(w) || 0) + 1)); return m; }
+  const PESO = { nome: 8, termos: 4, desc: 2, cat: 2, campos: 1 };
+  let indice = [];
+  function indexar() {
+    indice = CALCULADORAS.map(c => ({
+      c, nomeNorm: norm(c.nome),
+      nome: conjunto(c.nome), termos: contagemTermos(TERMOS[c.id] || ''), desc: conjunto(c.descricao),
+      cat: conjunto(c.categoria), campos: conjunto(c.campos.map(f => f.rotulo).join(' ')),
+    }));
   }
+  function buscar(q) {
+    const qt = tokens(q);
+    if (!qt.length) return [];
+    const nq = norm(q);
+    const r = indice.map(d => {
+      let s = 0; const hit = [];
+      for (const w of qt) {
+        const st = stem(w); let m = 0;
+        for (const k in PESO) if (d[k].has(st)) m = Math.max(m, PESO[k] + (k === 'termos' ? Math.min(2, d.termos.get(st) - 1) : 0));
+        if (m) { s += m; hit.push(w); }
+      }
+      if (d.nomeNorm.length > 3 && nq.includes(d.nomeNorm)) s += 10;
+      return { c: d.c, s, hit };
+    }).filter(x => x.s > 0).sort((a, b) => b.s - a.s || b.hit.length - a.hit.length);
+    const max = r.length ? r[0].s : 0;
+    return r.filter(x => x.s >= Math.max(2, max * 0.5)).slice(0, 6);
+  }
+
+  const porId = id => CALCULADORAS.find(c => c.id === id);
+  const areaDe = c => AREAS.find(a => a.nome === c.categoria);
+  const contagem = a => CALCULADORAS.filter(c => c.categoria === a.nome).length;
+  const COMECE = ['roi-saas', 'churn', 'runway-e-burn', 'precificacao', 'meta-de-vendas', 'margem-por-projeto'];
+  const EXEMPLOS = ['Meu churn está alto', 'Quanto custa um cliente novo?', 'Quando acaba meu caixa?', 'Quanto devo cobrar pelo plano?', 'Meu projeto deu lucro?', 'Vale construir ou comprar?'];
+
+  /* ---------- menu lateral ---------- */
+  function navAreas() {
+    $('navAreas').innerHTML = AREAS.map(a => `<a href="#/area/${a.slug}" data-nav="${a.slug}">${esc(a.nome)}<small>${contagem(a)}</small></a>`).join('');
+  }
+  function marcaNav(chave) {
+    document.querySelectorAll('#side nav a').forEach(a => a.classList.toggle('on', a.dataset.nav === chave));
+  }
+  function menu(abrir) { $('side').classList.toggle('open', abrir); $('scrim').style.display = abrir ? 'block' : 'none'; }
+  $('menu').onclick = () => menu(true);
+  $('scrim').onclick = () => menu(false);
+  $('scrim').style.cssText = 'position:fixed;inset:0;z-index:20;';
+  $('scrim').style.display = 'none';
+
+  /* ---------- cartões ---------- */
+  const cartao = (c, i, melhor) => `<a class="sug" style="--i:${i}" href="#/calc/${esc(c.id)}">
+      <span class="t">${melhor ? '<span class="badge good">Melhor resposta</span>' : ''}<span>${esc(c.categoria)}</span></span>
+      <b>${esc(c.nome)}</b><span class="d">${esc(c.descricao)}</span></a>`;
+
+  /* ---------- início: chat + sugestões ---------- */
+  const conversa = [];      // [{quem:'u'|'a', html}]
+  let painelAtual = null;   // {titulo, itens:[calc], melhor:boolean}
+
+  function mensagemBoasVindas() {
+    return `Me diga o que você quer entender sobre o seu SaaS e eu indico a calculadora certa. Por exemplo:` +
+      `<div class="chips">${EXEMPLOS.map(e => `<button class="chip" type="button" data-q="${esc(e)}">${esc(e)}</button>`).join('')}</div>`;
+  }
+
+  function painelHtml() {
+    const p = painelAtual || { titulo: 'Comece por aqui', itens: COMECE.map(porId).filter(Boolean), melhor: false };
+    return `<h2>${esc(p.titulo)}</h2><div class="sugs">${p.itens.map((c, i) => cartao(c, i, p.melhor && i === 0)).join('')}</div>`;
+  }
+
+  function home() {
+    $('home').innerHTML = `
+      <div class="hello"><h1>O que você quer descobrir?</h1>
+        <p>${CALCULADORAS.length} calculadoras em ${AREAS.length} áreas, cada uma com um veredito. Escreva sua dúvida ou explore pelas áreas.</p></div>
+      <div class="home-grid">
+        <div class="chat">
+          <div class="thread" id="thread" aria-live="polite"></div>
+          <form class="comp" id="comp"><textarea id="q" rows="1" placeholder="Ex.: meu caixa está acabando, quanto cobrar, churn alto..." aria-label="Sua dúvida"></textarea><button class="btn" type="submit">Enviar</button></form>
+        </div>
+        <aside class="painel" id="painel"></aside>
+      </div>
+      <h2 class="sec-h">Explorar por área</h2>
+      <div class="areas">${AREAS.map(a => `<a class="acard" href="#/area/${a.slug}"><b>${esc(a.nome)}</b><span>${esc(a.resumo)}</span><small>${contagem(a)} calculadoras</small></a>`).join('')}</div>`;
+    const th = $('thread');
+    th.innerHTML = `<div class="m a">${mensagemBoasVindas()}</div>` + conversa.map(m => `<div class="m ${m.quem}">${m.html}</div>`).join('');
+    $('painel').innerHTML = painelHtml();
+    th.scrollTop = th.scrollHeight;
+    $('comp').onsubmit = e => { e.preventDefault(); perguntar($('q').value); };
+    $('q').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); perguntar($('q').value); } };
+    $('q').oninput = e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; };
+    $('home').onclick = e => { const b = e.target.closest('.chip'); if (b) perguntar(b.dataset.q); };
+  }
+
+  function respostaPara(q, achados) {
+    if (!achados.length) {
+      painelAtual = { titulo: 'Explore as áreas', itens: COMECE.map(porId).filter(Boolean), melhor: false };
+      return `Ainda não tenho uma calculadora que responda isso. Tente descrever o número que você quer melhorar, como churn, caixa, preço, tráfego ou prazo de entrega. Ou escolha uma destas:` +
+        `<div class="chips">${EXEMPLOS.slice(0, 4).map(e => `<button class="chip" type="button" data-q="${esc(e)}">${esc(e)}</button>`).join('')}</div>`;
+    }
+    const [top, ...resto] = achados.map(a => a.c);
+    painelAtual = { titulo: achados.length > 1 ? `${achados.length} calculadoras para isso` : 'Calculadora para isso', itens: achados.map(a => a.c), melhor: true };
+    const outras = resto.slice(0, 2).map(c => `<a class="lk" href="#/calc/${esc(c.id)}">${esc(c.nome)}</a>`).join(' e ');
+    return `Para isso eu começaria pela <b>${esc(top.nome)}</b>. ${esc(top.descricao)}` +
+      (outras ? ` Também podem ajudar: ${outras}.` : '') +
+      `<div class="acoes"><a class="btn sm" href="#/calc/${esc(top.id)}">Abrir ${esc(top.nome)}</a></div>`;
+  }
+
+  function perguntar(texto) {
+    const q = (texto || '').trim();
+    if (!q) return;
+    const th = $('thread');
+    conversa.push({ quem: 'u', html: esc(q) });
+    th.insertAdjacentHTML('beforeend', `<div class="m u">${esc(q)}</div><div class="m a" id="digitando"><span class="dots"><i></i><i></i><i></i></span></div>`);
+    $('q').value = ''; $('q').style.height = 'auto';
+    th.scrollTop = th.scrollHeight;
+    setTimeout(() => {
+      const html = respostaPara(q, buscar(q));
+      conversa.push({ quem: 'a', html });
+      const d = $('digitando');
+      if (d) { d.removeAttribute('id'); d.innerHTML = html; }
+      $('painel').innerHTML = painelHtml();
+      th.scrollTop = th.scrollHeight;
+    }, reduzMovimento ? 0 : 550);
+  }
+
+  /* ---------- área ---------- */
+  function paginaArea(a) {
+    const cs = CALCULADORAS.filter(c => c.categoria === a.nome);
+    $('area').innerHTML = `<div class="area-head"><h1>${esc(a.nome)}</h1><p class="sub">${esc(a.resumo)} ${cs.length} calculadoras.</p></div>
+      <div class="grid-sugs">${cs.map((c, i) => cartao(c, i, false)).join('')}</div>`;
+  }
+
+  /* ---------- busca rápida (Ctrl/⌘ K) ---------- */
+  let sel = 0, itensPaleta = [];
+  function paleta(q) {
+    const achados = q.trim() ? buscar(q).map(x => x.c) : COMECE.map(porId).filter(Boolean);
+    itensPaleta = achados;
+    sel = 0;
+    $('pr').innerHTML = achados.length
+      ? achados.map((c, i) => `<a class="pi${i === 0 ? ' on' : ''}" role="option" href="#/calc/${esc(c.id)}" data-i="${i}"><b>${esc(c.nome)}</b><small>${esc(c.categoria)}</small></a>`).join('')
+      : `<div class="pvazio">Nada encontrado para "${esc(q)}". Tente outro assunto, como churn, caixa ou preço.</div>`;
+  }
+  function marcaPaleta() { document.querySelectorAll('#pr .pi').forEach((el, i) => el.classList.toggle('on', i === sel)); }
+  function abrePaleta() { $('palette').hidden = false; $('pq').value = ''; paleta(''); $('pq').focus(); menu(false); }
+  function fechaPaleta() { $('palette').hidden = true; }
+  $('abrirBusca').onclick = $('abrirBusca2').onclick = abrePaleta;
+  $('palette').onclick = e => { if (e.target === $('palette') || e.target.closest('.pi')) fechaPaleta(); };
+  $('pq').oninput = e => paleta(e.target.value);
+  $('pq').onkeydown = e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(sel + 1, itensPaleta.length - 1); marcaPaleta(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(sel - 1, 0); marcaPaleta(); }
+    else if (e.key === 'Enter' && itensPaleta[sel]) { e.preventDefault(); location.hash = '#/calc/' + itensPaleta[sel].id; fechaPaleta(); }
+    else if (e.key === 'Escape') fechaPaleta();
+  };
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && usuario) { e.preventDefault(); $('palette').hidden ? abrePaleta() : fechaPaleta(); }
+    else if (e.key === 'Escape' && !$('palette').hidden) fechaPaleta();
+  });
 
   /* ---------- calculadora ---------- */
   function abrir(c) {
     atual = c;
+    const a = areaDe(c);
+    $('back').href = a ? '#/area/' + a.slug : '#/';
+    $('back').textContent = '← ' + (a ? a.nome : 'Todas as calculadoras');
     $('cNome').textContent = c.nome;
     $('cDesc').textContent = c.descricao;
     $('form').innerHTML = c.campos.map(f => {
@@ -115,19 +275,34 @@
   /* ---------- rotas ---------- */
   function rota() {
     const logado = usuario && usuario.nome;
-    $('user').hidden = $('sair').hidden = !logado;
-    if (logado) $('user').textContent = logado;
-    $('auth').hidden = !!logado;
+    $('topAuth').hidden = $('authWrap').hidden = !!logado;
+    $('shell').hidden = !logado;
     $('authSetup').hidden = Auth.configurado;
-    $('home').hidden = $('calc').hidden = true;
-    if (!logado) { setModo(location.hash === '#cadastro' ? 'cadastro' : 'entrar'); return; }
-    const m = location.hash.match(/^#\/calc\/([\w-]+)/);
-    const c = m && CALCULADORAS.find(x => x.id === m[1]);
-    if (c) { $('calc').hidden = false; abrir(c); window.scrollTo(0, 0); }
-    else { $('home').hidden = false; }
+    $('auth').hidden = !!logado;
+    ['home', 'area', 'calc'].forEach(id => { $(id).hidden = true; });
+    menu(false);
+    if (!logado) { setModo(location.hash === '#cadastro' ? 'cadastro' : 'entrar'); fechaPaleta(); return; }
+    $('user').textContent = logado;
+
+    const mc = location.hash.match(/^#\/calc\/([\w-]+)/);
+    const ma = location.hash.match(/^#\/area\/([\w-]+)/);
+    const c = mc && porId(mc[1]);
+    const a = ma && AREAS.find(x => x.slug === ma[1]);
+    let crumb = 'Início';
+    if (c) {
+      const ar = areaDe(c);
+      $('calc').hidden = false; abrir(c); marcaNav(ar ? ar.slug : 'home');
+      crumb = `${ar ? ar.nome + ' / ' : ''}${c.nome}`;
+    } else if (a) {
+      $('area').hidden = false; paginaArea(a); marcaNav(a.slug); crumb = a.nome;
+    } else {
+      $('home').hidden = false; home(); marcaNav('home');
+    }
+    $('crumb').textContent = crumb;
+    window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', rota);
 
-  carregarCalculadoras().then(() => { catalogo(); Auth.iniciar(u => { usuario = u; rota(); fechaBoot(); }); })
-    .catch(e => { fechaBoot(); document.querySelector('main').innerHTML = `<div class="msg bad">${esc(e.message)}</div>`; });
+  carregarCalculadoras().then(() => { indexar(); navAreas(); Auth.iniciar(u => { usuario = u; rota(); fechaBoot(); }); })
+    .catch(e => { fechaBoot(); document.body.insertAdjacentHTML('afterbegin', `<div class="msg bad">${esc(e.message)}</div>`); });
 })();

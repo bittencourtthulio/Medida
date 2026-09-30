@@ -12,6 +12,8 @@ Site estático (HTML, CSS e JavaScript puros, sem build) publicado no **GitHub P
 | `app.html` | Plataforma: login, dashboard e calculadora |
 | `js/calculadoras/*.js` | Uma calculadora por arquivo |
 | `js/manifest.js` | Lista de calculadoras ativas |
+| `js/areas.js` | As 8 áreas do DNA EXPX (menu lateral e categorias) |
+| `js/termos.js` | Palavras e perguntas que levam a cada calculadora (busca e chat) |
 | `js/config.js` | Nome da plataforma e chaves do Firebase |
 | `scripts/validar.mjs` | Valida o contrato das calculadoras |
 | `.claude/skills/nova-calculadora` | Skill para o Claude Code criar calculadoras novas |
