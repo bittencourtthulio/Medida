@@ -6,7 +6,7 @@
   let est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } };
   let sel = null;            // { tipo: 'no' | 'seta', id }
   let desfazer = [];
-  let pronto = false, salvaT, caneta = false;
+  let pronto = false, salvaT, caneta = false, borracha = false;
 
   const uid = () => Math.random().toString(36).slice(2, 9);
   const mundo = () => $('qMundo');
@@ -60,6 +60,50 @@
       return `<path d="${d}" stroke-width="${t.w || 3}"/>`;
     }).join('');
   }
+  // Borracha: remove o trecho do traço que fica dentro do raio `r` (mundo) em torno de (cx, cy), partindo o traço em dois se preciso.
+  // Devolve os pedaços que sobram, ou null se o traço não foi tocado.
+  function cortaTraco(p, cx, cy, r) {
+    const q = [];
+    for (let i = 0; i < p.length; i += 2) {
+      if (i) {
+        const dx = p[i] - p[i - 2], dy = p[i + 1] - p[i - 1], n = Math.ceil(Math.hypot(dx, dy) / (r / 4));
+        for (let k = 1; k < n; k++) q.push(p[i - 2] + dx * k / n, p[i - 1] + dy * k / n);
+      }
+      q.push(p[i], p[i + 1]);
+    }
+    const dentro = i => Math.hypot(q[i] - cx, q[i + 1] - cy) <= r;
+    let tocou = false; for (let i = 0; i < q.length; i += 2) if (dentro(i)) { tocou = true; break; }
+    if (!tocou) return null;
+    const partes = []; let at = [];
+    for (let i = 0; i < q.length; i += 2) {
+      if (dentro(i)) { if (at.length >= 4) partes.push(at); at = []; }
+      else at.push(+q[i].toFixed(1), +q[i + 1].toFixed(1));
+    }
+    if (at.length >= 4) partes.push(at);
+    return partes;
+  }
+  function apagaTraco(x, y, r) {
+    if (!est.tracos || !est.tracos.length) return false;
+    const novos = [], tocados = [];
+    est.tracos.forEach(t => {
+      const partes = cortaTraco(t.p, x, y, r);
+      if (!partes) return novos.push(t);
+      tocados.push(t);
+      partes.forEach(p => novos.push({ id: uid(), p, w: t.w }));
+    });
+    if (!tocados.length) return false;
+    est.tracos = novos; tinta(); emite();
+    const doTablet = tocados.filter(t => t.t).map(t => t.id);
+    if (doTablet.length && Quadro.aoApagar) Quadro.aoApagar(doTablet);
+    return true;
+  }
+  function apagando(ev) {
+    foto();
+    const r = 13 / est.vista.k, passo = e => { const q = ponto(e); apagaTraco(q.x, q.y, r); };
+    passo(ev);
+    arrasta(ev, passo, salvar);
+  }
+
   function traco(ev) {
     foto();
     if (!est.tracos) est.tracos = [];
@@ -216,6 +260,7 @@
     const alvo = ev.target;
     if (alvo.closest('.qt[contenteditable="true"], .qt[contenteditable="plaintext-only"]')) return;
     if (caneta) return traco(ev);
+    if (borracha) return apagando(ev);
     const h = alvo.closest('.qh'), no = alvo.closest('.qn'), seta = alvo.closest('[data-seta]');
     if (h && no) return ligando(ev, no.dataset.id);
 
@@ -325,12 +370,18 @@
     document.addEventListener('keydown', aoTeclar);
     $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => adiciona(b.dataset.add); });
     $('qModelo').onchange = e => { modelo(e.target.value); e.target.value = ''; };
-    $('qCaneta').onclick = () => { caneta = !caneta; $('qCaneta').classList.toggle('on', caneta); tela.classList.toggle('caneta', caneta); };
+    const modo = qual => {
+      caneta = qual === 'caneta' ? !caneta : false; borracha = qual === 'borracha' ? !borracha : false;
+      $('qCaneta').classList.toggle('on', caneta); $('qBorracha').classList.toggle('on', borracha);
+      tela.classList.toggle('caneta', caneta); tela.classList.toggle('borracha', borracha);
+    };
+    $('qCaneta').onclick = () => modo('caneta');
+    $('qBorracha').onclick = () => modo('borracha');
     $('qApagar').onclick = apaga;
     $('qDesfazer').onclick = volta;
     $('qMais').onclick = () => zoom(1.2);
     $('qMenos').onclick = () => zoom(1 / 1.2);
-    $('qLimpar').onclick = () => { if (est.nos.length && confirm('Limpar o quadro inteiro?')) { foto(); est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } }; sel = null; desenhar(); salvar(); } };
+    $('qLimpar').onclick = () => { if ((est.nos.length || (est.tracos || []).length) && confirm('Limpar o quadro inteiro?')) { foto(); const doTablet = (est.tracos || []).filter(t => t.t).map(t => t.id); if (doTablet.length && Quadro.aoApagar) Quadro.aoApagar(doTablet); est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } }; sel = null; desenhar(); salvar(); } };
   }
 
   /* ---------- sala ao vivo: entradas e saídas ---------- */
@@ -348,7 +399,8 @@
   }
 
   window.Quadro = {
-    aoMudar: null, aoVista: null,
+    aoMudar: null, aoVista: null, aoApagar: null,
+    apagaTraco,
     abrir() {
       montar();
       if (!this.carregado) { carregar(); this.carregado = true; }
@@ -360,10 +412,18 @@
     addTraco(id, t) {
       if (!est.tracos) est.tracos = [];
       const i = est.tracos.findIndex(x => x.id === id);
-      if (i >= 0) { est.tracos[i].p = t.p; est.tracos[i].w = t.w; } else est.tracos.push({ id, p: t.p, w: t.w });
+      if (i >= 0) { est.tracos[i].p = t.p; est.tracos[i].w = t.w; } else est.tracos.push({ id, p: t.p, w: t.w, t: 1 });
       tinta(); salvar();
     },
     delTraco(id) { est.tracos = (est.tracos || []).filter(x => x.id !== id); tinta(); salvar(); },
+    // tablet: mostra o quadro de fundo, na mesma região (V) que aparece no computador; `ocultos` são traços que o tablet já desenha por conta própria
+    verVista(novo, V, ocultos) {
+      est = { nos: [], setas: [], tracos: [], ...novo, vista: { x: 0, y: 0, k: 1 } };
+      if (ocultos) est.tracos = est.tracos.filter(t => !ocultos.has(t.id));
+      const r = $('qTela').getBoundingClientRect(), u = Math.min(r.width / V.w, r.height / V.h);
+      est.vista = { k: u, x: (r.width - V.w * u) / 2 - V.x * u, y: (r.height - V.h * u) / 2 - V.y * u };
+      desenhar();
+    },
     // só leitura: recebe o quadro inteiro do anfitrião e desenha
     ver(novo) {
       est = { nos: [], setas: [], tracos: [], ...novo, vista: { x: 0, y: 0, k: 1 } };

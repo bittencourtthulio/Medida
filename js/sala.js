@@ -57,6 +57,11 @@ window.Sala = {
     const b = onChildRemoved(r, x => del(x.key));
     return () => { a(); b(); c(); };
   },
+  // comandos de borracha vindos do tablet: o anfitrião aplica e remove o comando
+  ouvirApagar(s, cb) {
+    return onChildAdded(caminho(s.id, `tablet/${s.chave}/apagar`), x => { const v = x.val(); remove(x.ref).catch(() => {}); if (v) cb(v); });
+  },
+  apagarTraco: (s, id) => remove(ref(db, `salas/${s.id}/tablet/${s.chave}/tracos/${id}`)).catch(() => {}),
   async encerrar(s) { try { await remove(ref(db, `salas/${s.id}`)); } catch (e) { /* já removida */ } try { localStorage.removeItem(CHAVE_LOCAL); } catch (e) { /* ok */ } },
 
   /* turma e tablet (anônimos) */
@@ -77,6 +82,7 @@ window.Sala = {
       gravar: (key, t) => set(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`), { p: JSON.stringify(t.p), w: t.w }),
       apagar: key => remove(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`)),
       limpar: () => remove(tr),
+      borracha: (pts, r) => set(push(caminho(id, `tablet/${chave}/apagar`)), { p: JSON.stringify(pts), r }),
       aoVivo: cb => onValue(caminho(id, 'vista'), x => cb(x.val())),
     };
   },

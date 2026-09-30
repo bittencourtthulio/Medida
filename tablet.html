@@ -2,23 +2,45 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex">
 <title>Tablet do quadro</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
-  #barra { position: fixed; top: 8px; left: 8px; right: 8px; z-index: 5; display: flex; gap: 6px; align-items: center; pointer-events: none; }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #barra { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; pointer-events: none; }
   #barra > * { pointer-events: auto; }
   #st { margin: 0; padding: 6px 14px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); font-size: 13px; }
   #sp { flex: 1; pointer-events: none !important; }
-  #cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; background: var(--soft); cursor: crosshair; }
+  #barra .btn { background: var(--paper); }
+  #barra .btn.on { background: var(--ink); color: var(--paper); }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; touch-action: none; background: transparent; cursor: crosshair; }
+  #qTela { position: fixed; inset: 0; height: auto; border: 0; border-radius: 0; z-index: 0; pointer-events: none; }
+  #qTela .qh, #qTela .qr { display: none; }
+  /* tela cheia: só a área de desenho; a barra vira ícones pequenos e translúcidos */
+  body.cheia #st, body.cheia .rot { display: none; }
+  body.cheia #barra { justify-content: flex-end; opacity: .85; }
+  body.cheia #barra .btn { padding: 6px 12px; }
 </style>
 </head>
 <body>
+<div class="q-tela" id="qTela">
+  <div class="q-grade" id="qGrade"></div>
+  <div class="q-mundo" id="qMundo"><svg id="qSetas" class="q-setas" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg><svg id="qTinta" class="q-tinta" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg></div>
+</div>
 <canvas id="cv"></canvas>
-<div id="barra"><p id="st">Conectando…</p><span id="sp"></span><button class="btn ghost sm" id="desf" type="button" disabled>Desfazer</button><button class="btn ghost sm" id="limpa" type="button" disabled>Limpar</button></div>
+<div id="barra">
+  <p id="st">Conectando…</p><span id="sp"></span>
+  <button class="btn ghost sm on" id="mCaneta" type="button" aria-label="Caneta">✎<span class="rot"> Caneta</span></button>
+  <button class="btn ghost sm" id="mBorracha" type="button" aria-label="Borracha">⌫<span class="rot"> Borracha</span></button>
+  <button class="btn ghost sm" id="desf" type="button" aria-label="Desfazer" disabled>↶<span class="rot"> Desfazer</span></button>
+  <button class="btn ghost sm" id="limpa" type="button" aria-label="Limpar meus traços" disabled>🗑<span class="rot"> Limpar</span></button>
+  <button class="btn ghost sm" id="cheia" type="button" aria-label="Tela cheia">⛶<span class="rot"> Tela cheia</span></button>
+</div>
 <script src="js/config.js"></script>
+<script src="js/quadro.js"></script>
 <script type="module" src="js/sala.js"></script>
 <script type="module">
   const $ = id => document.getElementById(id);
@@ -26,7 +48,11 @@
   const id = P.get('s'), chave = P.get('k');
   const cv = $('cv'), cx = cv.getContext('2d');
   const st = t => { $('st').textContent = t; };
-  let api = null, vista = null, dpr = 1, tracos = [];   // tracos: { key, p (mundo), w }
+  let api = null, vista = null, dpr = 1, quadro = null;
+  let tracos = [];          // traços desta tela ainda não confirmados pelo quadro: { key, p (mundo), w }
+  let proprios = [];        // chaves dos traços feitos aqui, para o Desfazer
+  const apagados = new Set();
+  let modo = 'caneta', atual = null, borr = null, cursor = null, enviaT = 0;
   const cor = () => getComputedStyle(document.body).color;
 
   // a tela do tablet mostra a parte do quadro que está visível no computador (encaixada, com folga)
@@ -35,57 +61,132 @@
     const u = Math.min(W / V.w, H / V.h), dw = V.w * u, dh = V.h * u;
     return { V, u, ox: (W - dw) / 2, oy: (H - dh) / 2, dw, dh };
   }
+  const raio = m => 18 / m.u;   // borracha: ~18 px de raio na tela do tablet
+
   function desenha() {
     const W = cv.clientWidth, H = cv.clientHeight, m = mapa();
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cx.clearRect(0, 0, W, H);
-    cx.fillStyle = getComputedStyle(document.body).backgroundColor; cx.fillRect(m.ox, m.oy, m.dw, m.dh);
     cx.strokeStyle = cor(); cx.globalAlpha = .25; cx.lineWidth = 1; cx.strokeRect(m.ox + .5, m.oy + .5, m.dw - 1, m.dh - 1); cx.globalAlpha = 1;
-    cx.strokeStyle = cor(); cx.lineCap = cx.lineJoin = 'round';
+    cx.lineCap = cx.lineJoin = 'round';
     tracos.forEach(t => {
       if (!t.p.length) return;
-      cx.lineWidth = Math.max(1, t.w * m.u); cx.beginPath();
-      cx.moveTo(m.ox + (t.p[0] - m.V.x) * m.u, m.oy + (t.p[1] - m.V.y) * m.u);
-      if (t.p.length === 2) cx.lineTo(m.ox + (t.p[0] - m.V.x) * m.u + .1, m.oy + (t.p[1] - m.V.y) * m.u);
-      for (let i = 2; i < t.p.length; i += 2) cx.lineTo(m.ox + (t.p[i] - m.V.x) * m.u, m.oy + (t.p[i + 1] - m.V.y) * m.u);
+      const X = i => m.ox + (t.p[i] - m.V.x) * m.u, Y = i => m.oy + (t.p[i + 1] - m.V.y) * m.u;
+      cx.lineWidth = Math.max(1, t.w * m.u); cx.beginPath(); cx.moveTo(X(0), Y(0));
+      if (t.p.length === 2) cx.lineTo(X(0) + .1, Y(0));
+      for (let i = 2; i < t.p.length; i += 2) cx.lineTo(X(i), Y(i));
       cx.stroke();
     });
+    if (modo === 'borracha' && cursor) {
+      cx.lineWidth = 2; cx.beginPath(); cx.arc(cursor.x, cursor.y, 18, 0, 7); cx.stroke();
+    }
   }
-  function ajusta() { dpr = devicePixelRatio || 1; cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; desenha(); }
+  // o quadro do computador aparece ao fundo; os traços que este tablet ainda desenha por conta própria não são repetidos
+  function fundo() { if (quadro) Quadro.verVista(quadro, mapa().V, new Set([...tracos.map(t => t.key), ...apagados])); }
+  function ajusta() { dpr = devicePixelRatio || 1; cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; desenha(); fundo(); }
   addEventListener('resize', ajusta);
 
-  function botoes() { $('desf').disabled = $('limpa').disabled = !tracos.length; }
+  function botoes() { $('desf').disabled = $('limpa').disabled = !proprios.length; }
+  function escolhe(m) {
+    modo = m; cursor = null;
+    $('mCaneta').classList.toggle('on', m === 'caneta'); $('mBorracha').classList.toggle('on', m === 'borracha');
+    desenha();
+  }
+  $('mCaneta').onclick = () => escolhe('caneta');
+  $('mBorracha').onclick = () => escolhe('borracha');
 
-  let atual = null, enviaT = 0;
-  cv.addEventListener('pointerdown', e => {
-    if (!api || atual) return;
-    e.preventDefault();
-    cv.setPointerCapture(e.pointerId);
-    const m = mapa(), r = cv.getBoundingClientRect();
-    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), m, r };
-    tracos.push(atual); ponto(e); envia(true);
-  });
-  function ponto(e) {
-    const { m, r } = atual, x = +(m.V.x + (e.clientX - r.left - m.ox) / m.u).toFixed(1), y = +(m.V.y + (e.clientY - r.top - m.oy) / m.u).toFixed(1), n = atual.p.length;
-    if (n >= 2 && Math.hypot(x - atual.p[n - 2], y - atual.p[n - 1]) * m.u < 1.5) return;
-    atual.p.push(x, y);
+  /* ---------- caneta ---------- */
+  function ponto(e, o) {
+    const x = +(o.m.V.x + (e.clientX - o.r.left - o.m.ox) / o.m.u).toFixed(1), y = +(o.m.V.y + (e.clientY - o.r.top - o.m.oy) / o.m.u).toFixed(1), n = o.p.length;
+    if (n >= 2 && Math.hypot(x - o.p[n - 2], y - o.p[n - 1]) * o.m.u < 1.5) return;
+    o.p.push(x, y);
   }
   function envia(forca) {
     const agora = Date.now();
     if (!forca && agora - enviaT < 100) return;
     enviaT = agora; api.gravar(atual.key, atual).catch(() => st('Sem conexão. Tente de novo.'));
   }
-  cv.addEventListener('pointermove', e => { if (!atual) return; e.preventDefault(); (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ponto); desenha(); envia(false); });
-  const fim = () => { if (!atual) return; envia(true); atual = null; botoes(); };
+  function enviaBorracha(forca) {
+    const agora = Date.now();
+    if (!borr.p.length || (!forca && agora - borr.t < 70)) return;
+    borr.t = agora; const pts = borr.p; borr.p = [];
+    api.borracha(pts, +borr.raio.toFixed(2)).catch(() => st('Sem conexão. Tente de novo.'));
+  }
+
+  cv.addEventListener('pointerdown', e => {
+    if (!api || atual || borr) return;
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+    const m = mapa(), r = cv.getBoundingClientRect();
+    if (modo === 'borracha') {
+      borr = { m, rect: r, p: [], t: 0, raio: raio(m) };
+      cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
+      ponto(e, { m, r, p: borr.p }); enviaBorracha(true); desenha(); return;
+    }
+    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), m, r };
+    tracos.push(atual); proprios.push(atual.key); ponto(e, atual); envia(true); botoes();
+  });
+  cv.addEventListener('pointermove', e => {
+    const r = cv.getBoundingClientRect();
+    if (modo === 'borracha') cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
+    if (borr) {
+      e.preventDefault();
+      (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => ponto(ev, { m: borr.m, r: borr.rect, p: borr.p }));
+      enviaBorracha(false); desenha(); return;
+    }
+    if (!atual) { if (modo === 'borracha') desenha(); return; }
+    e.preventDefault();
+    (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => ponto(ev, atual));
+    desenha(); envia(false);
+  });
+  const fim = () => {
+    if (borr) { enviaBorracha(true); borr = null; cursor = null; desenha(); return; }
+    if (!atual) return;
+    envia(true); atual = null; botoes(); fundo();
+  };
   cv.addEventListener('pointerup', fim); cv.addEventListener('pointercancel', fim);
+  cv.addEventListener('pointerleave', () => { if (!borr && modo === 'borracha') { cursor = null; desenha(); } });
 
-  $('desf').onclick = () => { const t = tracos.pop(); if (t) api.apagar(t.key); botoes(); desenha(); };
-  $('limpa').onclick = () => { tracos = []; api.limpar(); botoes(); desenha(); };
+  $('desf').onclick = () => {
+    const k = proprios.pop(); if (!k) return;
+    tracos = tracos.filter(t => t.key !== k); apagados.add(k); api.apagar(k);
+    botoes(); fundo(); desenha();
+  };
+  $('limpa').onclick = () => {
+    proprios.forEach(k => apagados.add(k)); proprios = []; tracos = [];
+    api.limpar(); botoes(); fundo(); desenha();
+  };
 
+  /* ---------- tela cheia: só a área de desenho ---------- */
+  const el = document.documentElement;
+  const suporta = !!(el.requestFullscreen || el.webkitRequestFullscreen);
+  const emCheia = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const marcaCheia = on => { document.body.classList.toggle('cheia', on); $('cheia').setAttribute('aria-label', on ? 'Sair da tela cheia' : 'Tela cheia'); setTimeout(ajusta, 150); };
+  $('cheia').onclick = async () => {
+    try {
+      if (!emCheia() && document.body.classList.contains('cheia')) return marcaCheia(false);   // estava no modo foco: sai dele
+      if (!suporta) return marcaCheia(true);   // sem API de tela cheia: modo foco
+      if (emCheia()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else await (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    } catch (e) { marcaCheia(!document.body.classList.contains('cheia')); }
+  };
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => marcaCheia(!!emCheia())));
+  if (!suporta) $('cheia').title = 'Neste aparelho: Compartilhar → Adicionar à Tela de Início abre em tela cheia';
+
+  /* ---------- conexão ---------- */
   ajusta();
   if (!id || !chave) st('Link inválido. Leia o QR code de novo.');
   else if (!Sala.disponivel) st('Sala ao vivo não configurada.');
-  else Sala.tablet(id, chave).then(a => { api = a; st('● Desenhe aqui'); a.aoVivo(v => { vista = v; desenha(); }); }).catch(e => st(e.message));
+  else Sala.tablet(id, chave).then(a => {
+    api = a; st('● Desenhe aqui');
+    a.aoVivo(v => { vista = v; desenha(); fundo(); });
+    Sala.ouvirQuadro(id, est => {
+      quadro = est;
+      // o traço já chegou ao quadro: deixa de ser desenhado aqui e passa a vir do fundo
+      tracos = tracos.filter(t => t === atual || !(est.tracos || []).some(h => h.id === t.key && h.p.length >= t.p.length));
+      fundo(); desenha();
+    }, () => {});
+  }).catch(e => st(e.message));
 </script>
 </body>
 </html>

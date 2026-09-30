@@ -27,6 +27,11 @@
           "$chave": {
             ".read": "auth != null && $chave === root.child('salas').child($sala).child('chave').val()",
             ".write": "auth != null && $chave === root.child('salas').child($sala).child('chave').val()",
+            "apagar": {
+              "$id": {
+                ".validate": "newData.hasChildren(['p', 'r']) && newData.child('p').isString() && newData.child('p').val().length < 6000"
+              }
+            },
             "tracos": {
               "$id": {
                 ".validate": "newData.hasChildren(['p', 'w']) && newData.child('p').isString() && newData.child('p').val().length < 60000"

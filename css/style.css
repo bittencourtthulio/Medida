@@ -491,3 +491,6 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .modal-box textarea { flex: 1; min-height: 280px; resize: vertical; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--soft); color: var(--ink); }
 .modal-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
 @media print { .modal { display: none !important; } }
+
+#qBorracha.on { background: var(--ink); color: var(--paper); }
+.q-tela.borracha { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='12' fill='none' stroke='black' stroke-width='3'/><circle cx='14' cy='14' r='12' fill='none' stroke='white' stroke-width='1.5'/></svg>") 14 14, cell; }
