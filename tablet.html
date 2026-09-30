@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>Tablet do quadro</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+  #barra { position: fixed; top: 8px; left: 8px; right: 8px; z-index: 5; display: flex; gap: 6px; align-items: center; pointer-events: none; }
+  #barra > * { pointer-events: auto; }
+  #st { margin: 0; padding: 6px 14px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); font-size: 13px; }
+  #sp { flex: 1; pointer-events: none !important; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; background: var(--soft); cursor: crosshair; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="barra"><p id="st">Conectando…</p><span id="sp"></span><button class="btn ghost sm" id="desf" type="button" disabled>Desfazer</button><button class="btn ghost sm" id="limpa" type="button" disabled>Limpar</button></div>
+<script src="js/config.js"></script>
+<script type="module" src="js/sala.js"></script>
+<script type="module">
+  const $ = id => document.getElementById(id);
+  const P = new URLSearchParams(location.hash.slice(1));
+  const id = P.get('s'), chave = P.get('k');
+  const cv = $('cv'), cx = cv.getContext('2d');
+  const st = t => { $('st').textContent = t; };
+  let api = null, vista = null, dpr = 1, tracos = [];   // tracos: { key, p (mundo), w }
+  const cor = () => getComputedStyle(document.body).color;
+
+  // a tela do tablet mostra a parte do quadro que está visível no computador (encaixada, com folga)
+  function mapa() {
+    const W = cv.clientWidth, H = cv.clientHeight, V = vista || { x: 0, y: 0, w: W, h: H };
+    const u = Math.min(W / V.w, H / V.h), dw = V.w * u, dh = V.h * u;
+    return { V, u, ox: (W - dw) / 2, oy: (H - dh) / 2, dw, dh };
+  }
+  function desenha() {
+    const W = cv.clientWidth, H = cv.clientHeight, m = mapa();
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx.clearRect(0, 0, W, H);
+    cx.fillStyle = getComputedStyle(document.body).backgroundColor; cx.fillRect(m.ox, m.oy, m.dw, m.dh);
+    cx.strokeStyle = cor(); cx.globalAlpha = .25; cx.lineWidth = 1; cx.strokeRect(m.ox + .5, m.oy + .5, m.dw - 1, m.dh - 1); cx.globalAlpha = 1;
+    cx.strokeStyle = cor(); cx.lineCap = cx.lineJoin = 'round';
+    tracos.forEach(t => {
+      if (!t.p.length) return;
+      cx.lineWidth = Math.max(1, t.w * m.u); cx.beginPath();
+      cx.moveTo(m.ox + (t.p[0] - m.V.x) * m.u, m.oy + (t.p[1] - m.V.y) * m.u);
+      if (t.p.length === 2) cx.lineTo(m.ox + (t.p[0] - m.V.x) * m.u + .1, m.oy + (t.p[1] - m.V.y) * m.u);
+      for (let i = 2; i < t.p.length; i += 2) cx.lineTo(m.ox + (t.p[i] - m.V.x) * m.u, m.oy + (t.p[i + 1] - m.V.y) * m.u);
+      cx.stroke();
+    });
+  }
+  function ajusta() { dpr = devicePixelRatio || 1; cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; desenha(); }
+  addEventListener('resize', ajusta);
+
+  function botoes() { $('desf').disabled = $('limpa').disabled = !tracos.length; }
+
+  let atual = null, enviaT = 0;
+  cv.addEventListener('pointerdown', e => {
+    if (!api || atual) return;
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+    const m = mapa(), r = cv.getBoundingClientRect();
+    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), m, r };
+    tracos.push(atual); ponto(e); envia(true);
+  });
+  function ponto(e) {
+    const { m, r } = atual, x = +(m.V.x + (e.clientX - r.left - m.ox) / m.u).toFixed(1), y = +(m.V.y + (e.clientY - r.top - m.oy) / m.u).toFixed(1), n = atual.p.length;
+    if (n >= 2 && Math.hypot(x - atual.p[n - 2], y - atual.p[n - 1]) * m.u < 1.5) return;
+    atual.p.push(x, y);
+  }
+  function envia(forca) {
+    const agora = Date.now();
+    if (!forca && agora - enviaT < 100) return;
+    enviaT = agora; api.gravar(atual.key, atual).catch(() => st('Sem conexão. Tente de novo.'));
+  }
+  cv.addEventListener('pointermove', e => { if (!atual) return; e.preventDefault(); (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ponto); desenha(); envia(false); });
+  const fim = () => { if (!atual) return; envia(true); atual = null; botoes(); };
+  cv.addEventListener('pointerup', fim); cv.addEventListener('pointercancel', fim);
+
+  $('desf').onclick = () => { const t = tracos.pop(); if (t) api.apagar(t.key); botoes(); desenha(); };
+  $('limpa').onclick = () => { tracos = []; api.limpar(); botoes(); desenha(); };
+
+  ajusta();
+  if (!id || !chave) st('Link inválido. Leia o QR code de novo.');
+  else if (!Sala.disponivel) st('Sala ao vivo não configurada.');
+  else Sala.tablet(id, chave).then(a => { api = a; st('● Desenhe aqui'); a.aoVivo(v => { vista = v; desenha(); }); }).catch(e => st(e.message));
+</script>
+</body>
+</html>

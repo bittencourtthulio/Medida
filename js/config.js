@@ -8,5 +8,7 @@ window.APP_CONFIG = {
     authDomain: 'medida-eafe2.firebaseapp.com',
     projectId: 'medida-eafe2',
     appId: '1:132799686517:web:f8ee44d91e78d4ed15953c',
+    // Realtime Database (sala ao vivo do quadro). Preenchido depois de criar o banco no console.
+    databaseURL: 'https://medida-eafe2-default-rtdb.firebaseio.com',
   },
 };

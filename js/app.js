@@ -4,6 +4,7 @@
   const reduzMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let modo = 'entrar';
   let atual = null;
+  let ultimo = null;   // último cálculo (calculadora, valores e resultado), para montar o prompt
   let usuario = null;
 
   document.title = APP_CONFIG.NOME;
@@ -205,6 +206,7 @@
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && usuario) { e.preventDefault(); $('palette').hidden ? abrePaleta() : fechaPaleta(); }
     else if (e.key === 'Escape' && !$('palette').hidden) fechaPaleta();
+    else if (e.key === 'Escape' && !$('promptModal').hidden) $('promptModal').hidden = true;
   });
 
   /* ---------- calculadora ---------- */
@@ -273,6 +275,7 @@
     });
     const v = lerValores(c, leitor);
     const r = c.calcular(v);
+    ultimo = { c, v, r };
     const d = r.diagnostico;
     $('diag').innerHTML = `<div class="diag ${d.tipo}"><h3>${esc(d.titulo)}</h3><p>${esc(d.texto)}</p>${d.pontos ? '<ul>' + d.pontos.map(p => `<li>${esc(p)}</li>`).join('') + '</ul>' : ''}</div>`;
     $('kpis').innerHTML = r.kpis.map((k, i) =>
@@ -288,6 +291,45 @@
       return `<li><span>${esc(f.rotulo)}</span><b>${esc(txt)}</b></li>`;
     }).join('');
   }
+
+  /* ---------- prompt pronto para colar na IA do usuário ---------- */
+  function montaPrompt() {
+    const { c, v, r } = ultimo, d = r.diagnostico;
+    const valor = f => {
+      const x = v[f.id];
+      return f.tipo === 'checkbox' ? (x ? 'sim' : 'não') : `${f.prefixo ? f.prefixo + ' ' : ''}${fmt.num(x, 2)}${f.sufixo ? ' ' + f.sufixo : ''}`;
+    };
+    const premissas = c.campos.filter(f => !f.mostrarSe || v[f.mostrarSe]).map(f => `- ${f.rotulo}: ${valor(f)}`).join('\n');
+    const kpis = r.kpis.map(k => `- ${k.nome}: ${k.valor}${k.nota ? ' (' + k.nota + ')' : ''}${k.selo ? ' [' + k.selo[1] + ']' : ''}`).join('\n');
+    const leitura = { good: 'saudável', warn: 'atenção', bad: 'crítico' }[d.tipo] || d.tipo;
+    const foco = { good: 'como sustentar esse resultado e onde ainda há ganho', warn: 'o que separa esse resultado de um bom resultado', bad: 'o que conter primeiro e o que está causando o problema' }[d.tipo] || 'o que fazer a partir daqui';
+    return [
+      `Você é um consultor sênior de ${c.categoria}, com experiência em empresas de SaaS e tecnologia. Analise o resultado abaixo, calculado na plataforma Medida, e me oriente.`,
+      '',
+      `## Calculadora\n${c.nome}: ${c.descricao}`,
+      `## Premissas que informei\n${premissas}`,
+      `## Resultados\n${kpis || '(sem indicadores: faltam dados)'}`,
+      `## Diagnóstico da plataforma (${leitura})\n${d.titulo}. ${d.texto}${d.pontos && d.pontos.length ? '\n' + d.pontos.map(p => '- ' + p).join('\n') : ''}`,
+      '',
+      '## O que quero de você',
+      '1. Interprete o que esses números dizem sobre o meu negócio, sem repetir o que já está acima.',
+      `2. Diga ${foco}.`,
+      '3. Aponte as 2 ou 3 alavancas de maior impacto e quanto cada uma moveria os indicadores.',
+      '4. Monte um plano de ação para os próximos 30 dias, com passos concretos e o que medir em cada um.',
+      '5. Liste o que você precisaria saber a mais (dados e contexto) para recomendar com segurança, e me faça essas perguntas.',
+      '',
+      'Seja direto, use os meus números e deixe claro quando uma conclusão for hipótese. As regras de bolso do diagnóstico são referências, não metas: questione se não se aplicarem ao meu caso.',
+    ].join('\n').replace(/\n## /g, '\n\n## ').replace(/\n{3,}/g, '\n\n');
+  }
+  function abrePrompt() { $('promptTxt').value = montaPrompt(); $('promptModal').hidden = false; $('promptTxt').focus(); $('promptTxt').select(); }
+  $('promptBtn').onclick = abrePrompt;
+  $('promptFecha').onclick = () => { $('promptModal').hidden = true; };
+  $('promptModal').onclick = e => { if (e.target === $('promptModal')) $('promptModal').hidden = true; };
+  $('promptCopia').onclick = async () => {
+    const b = $('promptCopia'), t = $('promptTxt');
+    try { await navigator.clipboard.writeText(t.value); b.textContent = '✓ Copiado'; } catch (e) { t.select(); document.execCommand('copy'); b.textContent = '✓ Copiado'; }
+    clearTimeout(b.t); b.t = setTimeout(() => { b.textContent = 'Copiar prompt'; }, 2000);
+  };
 
   // PDF: o diálogo de impressão do navegador tem "Salvar como PDF"; o título vira o nome do arquivo.
   $('pdf').onclick = () => {
@@ -321,7 +363,7 @@
     document.querySelector('main.page').classList.toggle('larga', q);
     let crumb = 'Início';
     if (q) {
-      $('quadro').hidden = false; Quadro.abrir(); marcaNav('quadro'); crumb = 'Quadro branco';
+      $('quadro').hidden = false; Quadro.abrir(); if (window.QuadroSala) QuadroSala.retomar(); marcaNav('quadro'); crumb = 'Quadro branco';
     } else if (c) {
       const ar = areaDe(c);
       $('calc').hidden = false; abrir(c); marcaNav(ar ? ar.slug : 'home');

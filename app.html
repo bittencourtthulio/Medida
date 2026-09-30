@@ -83,18 +83,36 @@
       <button class="btn ghost sm" type="button" data-add="caixa">+ Caixa</button>
       <button class="btn ghost sm" type="button" data-add="nota">+ Nota</button>
       <button class="btn ghost sm" type="button" data-add="circulo">+ Círculo</button>
+      <button class="btn ghost sm" type="button" data-add="losango">+ Losango</button>
+      <button class="btn ghost sm" type="button" data-add="triangulo">+ Triângulo</button>
       <button class="btn ghost sm" type="button" data-add="texto">+ Texto</button>
+      <button class="btn ghost sm" type="button" id="qCaneta" title="Desenhar à mão livre">✎ Caneta</button>
       <select id="qModelo" aria-label="Inserir modelo"><option value="">Modelos…</option><option value="funil">Funil de vendas</option><option value="unit">Unit economics</option><option value="retencao">Receita recorrente</option></select>
       <span class="q-sp"></span>
+      <button class="btn sm" type="button" id="qSalaBtn">📱 Tablet e turma</button>
       <button class="btn ghost sm" type="button" id="qDesfazer">Desfazer</button>
       <button class="btn ghost sm" type="button" id="qApagar">Apagar</button>
       <button class="btn ghost sm" type="button" id="qLimpar">Limpar</button>
       <span class="q-zoom"><button class="btn ghost sm" type="button" id="qMenos" aria-label="Diminuir">−</button><b id="qZoom">100%</b><button class="btn ghost sm" type="button" id="qMais" aria-label="Aumentar">+</button></span>
     </div>
+    <div class="q-sala" id="qSala" hidden role="dialog" aria-label="Tablet e turma">
+      <button class="btn ghost sm q-x" type="button" id="qsFechar" aria-label="Fechar">✕</button>
+      <p class="q-st" id="qsStatus">Conectando…</p>
+      <div id="qsCorpo" hidden>
+        <h3>Tablet: desenhar no quadro</h3>
+        <p class="q-h">Leia o QR code com o tablet. O que você rabiscar lá aparece aqui na hora.</p>
+        <div class="q-qr" id="qsTabletQr"></div>
+        <div class="q-lk"><input id="qsTabletLink" readonly aria-label="Link do tablet"><button class="btn ghost sm" type="button" data-copia="qsTabletLink">Copiar</button></div>
+        <h3>Turma: ver ao vivo</h3>
+        <p class="q-h">Mande este link no chat. Quem abrir só acompanha, sem editar e sem precisar de conta.</p>
+        <div class="q-lk"><input id="qsTurmaLink" readonly aria-label="Link da turma"><button class="btn ghost sm" type="button" data-copia="qsTurmaLink">Copiar</button></div>
+        <button class="btn ghost sm" type="button" id="qsEncerrar">Encerrar sessão</button>
+      </div>
+    </div>
     <div class="q-tela" id="qTela">
       <div class="q-grade" id="qGrade"></div>
-      <div class="q-mundo" id="qMundo"><svg id="qSetas" class="q-setas" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg></div>
-      <p class="q-dica">Arraste para mover · duplo clique edita · puxe a bolinha de um elemento até outro para ligar · Delete apaga · Ctrl+rolagem dá zoom</p>
+      <div class="q-mundo" id="qMundo"><svg id="qSetas" class="q-setas" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg><svg id="qTinta" class="q-tinta" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg></div>
+      <p class="q-dica">Arraste para mover · duplo clique edita · puxe a bolinha até outro elemento para ligar · puxe o canto para redimensionar · Delete apaga · Ctrl+rolagem dá zoom</p>
     </div>
   </section>
 
@@ -104,7 +122,7 @@
     <a class="back" id="back" href="#/">← Todas as calculadoras</a>
     <div class="head">
       <div class="t"><h1 id="cNome"></h1><p class="sub" id="cDesc"></p></div>
-      <div class="acoes-head sem-print"><button class="btn ghost" id="link" type="button">🔗 Copiar link</button><button class="btn" id="pdf" type="button">⬇ Salvar PDF</button></div>
+      <div class="acoes-head sem-print"><button class="btn ghost" id="promptBtn" type="button">✨ Prompt para IA</button><button class="btn ghost" id="link" type="button">🔗 Copiar link</button><button class="btn" id="pdf" type="button">⬇ Salvar PDF</button></div>
     </div>
     <div class="grid">
       <section class="card" id="formCard"><h2>Premissas</h2><div id="form"></div></section>
@@ -122,6 +140,15 @@
 </div>
 </div>
 
+<div id="promptModal" class="modal" hidden>
+  <div class="modal-box" role="dialog" aria-label="Prompt para IA">
+    <h2>Prompt para a sua IA</h2>
+    <p class="q-h">Já vai com as suas premissas e os resultados desta calculadora. Copie, cole no ChatGPT, Claude ou no que você usa e peça a orientação. Pode editar antes, por exemplo para incluir o contexto da sua empresa.</p>
+    <textarea id="promptTxt" spellcheck="false" aria-label="Texto do prompt"></textarea>
+    <div class="modal-acoes"><button class="btn" id="promptCopia" type="button">Copiar prompt</button><button class="btn ghost" id="promptFecha" type="button">Fechar</button></div>
+  </div>
+</div>
+
 <div id="palette" hidden>
   <div class="pal" role="dialog" aria-label="Buscar calculadoras">
     <input id="pq" type="text" placeholder="Busque por assunto: churn, caixa, preço, tráfego..." autocomplete="off" aria-label="Buscar">
@@ -137,7 +164,10 @@
 <script src="js/graficos.js"></script>
 <script src="js/manifest.js"></script>
 <script src="js/quadro.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script type="module" src="js/auth.js"></script>
+<script type="module" src="js/sala.js"></script>
+<script type="module" src="js/quadro-sala.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

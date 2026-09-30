@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Quadro ao vivo</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { margin: 0; }
+  .q-tela { height: 100vh; border: 0; border-radius: 0; cursor: default; }
+  .ao-vivo-msg { position: fixed; top: 12px; left: 12px; z-index: 5; margin: 0; padding: 6px 14px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); font-size: 13px; }
+  .q-tela .qn { cursor: default; }
+  .q-tela .qh, .q-tela .qr { display: none; }
+</style>
+</head>
+<body>
+<p class="ao-vivo-msg" id="msg">Conectando…</p>
+<div class="q-tela" id="qTela">
+  <div class="q-grade" id="qGrade"></div>
+  <div class="q-mundo" id="qMundo"><svg id="qSetas" class="q-setas" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg><svg id="qTinta" class="q-tinta" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/quadro.js"></script>
+<script type="module" src="js/sala.js"></script>
+<script type="module">
+  const id = new URLSearchParams(location.hash.slice(1)).get('s');
+  const msg = t => { const m = document.getElementById('msg'); m.textContent = t || '● Ao vivo'; };
+  if (!id) msg('Link inválido.');
+  else if (!Sala.disponivel) msg('Sala ao vivo não configurada.');
+  else Sala.ouvirQuadro(id, est => Quadro.ver(est), t => msg(t));
+</script>
+</body>
+</html>

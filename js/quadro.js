@@ -3,19 +3,28 @@
 (function () {
   const CHAVE = 'medida_quadro_v1';
   const $ = id => document.getElementById(id);
-  let est = { nos: [], setas: [], vista: { x: 0, y: 0, k: 1 } };
+  let est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } };
   let sel = null;            // { tipo: 'no' | 'seta', id }
   let desfazer = [];
-  let pronto = false, salvaT;
+  let pronto = false, salvaT, caneta = false;
 
   const uid = () => Math.random().toString(36).slice(2, 9);
   const mundo = () => $('qMundo');
 
   /* ---------- estado ---------- */
   function carregar() {
-    try { const s = JSON.parse(localStorage.getItem(CHAVE)); if (s && Array.isArray(s.nos) && Array.isArray(s.setas)) est = { vista: { x: 0, y: 0, k: 1 }, ...s }; } catch (e) { /* sem cache: começa vazio */ }
+    try { const s = JSON.parse(localStorage.getItem(CHAVE)); if (s && Array.isArray(s.nos) && Array.isArray(s.setas)) est = { vista: { x: 0, y: 0, k: 1 }, tracos: [], ...s }; } catch (e) { /* sem cache: começa vazio */ }
+  }
+  // transmite o quadro para a sala ao vivo (se houver), no máximo ~8 vezes por segundo
+  let emT = 0, emP = false, vistaT;
+  function emite() {
+    if (!window.Quadro || !Quadro.aoMudar) return;
+    const agora = Date.now();
+    if (agora - emT > 120) { emT = agora; Quadro.aoMudar(est); }
+    else if (!emP) { emP = true; setTimeout(() => { emP = false; emT = Date.now(); Quadro.aoMudar && Quadro.aoMudar(est); }, 130); }
   }
   function salvar() {
+    emite();
     clearTimeout(salvaT);
     salvaT = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(est)); } catch (e) { /* cache cheio ou bloqueado */ } }, 250);
   }
@@ -29,9 +38,47 @@
   function aplicaVista() {
     const { x, y, k } = est.vista;
     mundo().style.transform = `translate(${x}px, ${y}px) scale(${k})`;
-    $('qZoom').textContent = Math.round(k * 100) + '%';
-    $('qGrade').style.backgroundPosition = `${x}px ${y}px`;
-    $('qGrade').style.backgroundSize = `${24 * k}px ${24 * k}px`;
+    if ($('qZoom')) $('qZoom').textContent = Math.round(k * 100) + '%';
+    if ($('qGrade')) { $('qGrade').style.backgroundPosition = `${x}px ${y}px`; $('qGrade').style.backgroundSize = `${24 * k}px ${24 * k}px`; }
+    clearTimeout(vistaT);
+    vistaT = setTimeout(() => { if (window.Quadro && Quadro.aoVista) Quadro.aoVista(visivel()); }, 300);
+  }
+  // retângulo do mundo que aparece na tela (o tablet desenha dentro dele)
+  function visivel() {
+    const r = $('qTela').getBoundingClientRect(), v = est.vista;
+    return { x: Math.round(-v.x / v.k), y: Math.round(-v.y / v.k), w: Math.round(r.width / v.k), h: Math.round(r.height / v.k) };
+  }
+
+  /* ---------- traços à mão livre (caneta do quadro e do tablet) ---------- */
+  function tinta() {
+    const svg = $('qTinta'); if (!svg) return;
+    svg.innerHTML = (est.tracos || []).map(t => {
+      const p = t.p; if (!p || p.length < 2) return '';
+      let d = `M${p[0]} ${p[1]}`;
+      for (let i = 2; i < p.length; i += 2) d += `L${p[i]} ${p[i + 1]}`;
+      if (p.length === 2) d += `L${p[0]} ${p[1]}`;
+      return `<path d="${d}" stroke-width="${t.w || 3}"/>`;
+    }).join('');
+  }
+  function traco(ev) {
+    foto();
+    if (!est.tracos) est.tracos = [];
+    const t = { id: uid(), p: [], w: +(3 / est.vista.k).toFixed(1) };
+    est.tracos.push(t);
+    const ponta = e => {
+      const q = ponto(e), x = +q.x.toFixed(1), y = +q.y.toFixed(1), n = t.p.length;
+      if (n >= 2 && Math.hypot(x - t.p[n - 2], y - t.p[n - 1]) * est.vista.k < 2) return;
+      t.p.push(x, y); tinta(); emite();
+    };
+    ponta(ev);
+    arrasta(ev, ponta, salvar);
+  }
+
+  const FORMAS = { losango: '50,0 100,50 50,100 0,50', triangulo: '50,0 100,100 0,100' };
+  const TAMANHO = { caixa: [160, 60], nota: [170, 110], circulo: [140, 140], losango: [180, 120], triangulo: [170, 140] };
+  function tamanho(e, n) {
+    if (n.w) { e.style.width = n.w + 'px'; e.style.minWidth = '0'; e.style.maxWidth = 'none'; }
+    if (n.h) { e.style.height = n.h + 'px'; e.style.minHeight = '0'; }
   }
 
   function desenhar() {
@@ -42,29 +89,45 @@
       e.className = `qn ${n.tipo}${sel && sel.tipo === 'no' && sel.id === n.id ? ' sel' : ''}`;
       e.dataset.id = n.id;
       e.style.left = n.x + 'px'; e.style.top = n.y + 'px';
+      if (FORMAS[n.tipo]) e.insertAdjacentHTML('afterbegin', `<svg class="qf" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${FORMAS[n.tipo]}"/></svg>`);
+      tamanho(e, n);
       const t = document.createElement('div');
       t.className = 'qt'; t.textContent = n.texto;
       e.appendChild(t);
       const h = document.createElement('span');
       h.className = 'qh'; h.title = 'Arraste até outro elemento para ligar';
       e.appendChild(h);
+      if (n.tipo !== 'texto') { const r = document.createElement('span'); r.className = 'qr'; r.title = 'Arraste para redimensionar'; e.appendChild(r); }
       m.appendChild(e);
     });
     aplicaVista();
     setas();
+    tinta();
   }
 
-  // ponto onde a reta do centro de `a` para o centro de `b` cruza a borda de `a`
+  // ponto onde a reta do centro de `a` para o centro de `b` cruza o contorno de `a` (retângulo, elipse, losango ou triângulo)
   function borda(a, b) {
-    const ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2;
-    const dx = bx - ax, dy = by - ay;
+    const hw = a.w / 2, hh = a.h / 2, ax = a.x + hw, ay = a.y + hh;
+    const dx = b.x + b.w / 2 - ax, dy = b.y + b.h / 2 - ay;
     if (!dx && !dy) return { x: ax, y: ay };
-    const s = Math.min(dx ? (a.w / 2) / Math.abs(dx) : Infinity, dy ? (a.h / 2) / Math.abs(dy) : Infinity);
-    return { x: ax + dx * s, y: ay + dy * s };
+    let t;
+    if (a.tipo === 'circulo') t = 1 / Math.hypot(dx / hw, dy / hh);
+    else if (a.tipo === 'losango') t = 1 / (Math.abs(dx) / hw + Math.abs(dy) / hh);
+    else if (a.tipo === 'triangulo') {
+      const P = [[0, -hh], [hw, hh], [-hw, hh]], cz = (u, v) => u[0] * v[1] - u[1] * v[0];
+      t = Infinity;
+      for (let i = 0; i < 3; i++) {
+        const p = P[i], q = P[(i + 1) % 3], e = [q[0] - p[0], q[1] - p[1]], den = cz([dx, dy], e);
+        if (!den) continue;
+        const tt = cz(p, e) / den, u = cz(p, [dx, dy]) / den;
+        if (tt > 0 && u >= 0 && u <= 1 && tt < t) t = tt;
+      }
+    } else t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+    return { x: ax + dx * t, y: ay + dy * t };
   }
   function caixa(n) {
     const e = mundo().querySelector(`.qn[data-id="${n.id}"]`);
-    return e ? { x: n.x, y: n.y, w: e.offsetWidth, h: e.offsetHeight } : null;
+    return e ? { tipo: n.tipo, x: n.x, y: n.y, w: e.offsetWidth, h: e.offsetHeight } : null;
   }
 
   function setas() {
@@ -86,13 +149,14 @@
     return { x: (r.width / 2 - v.x) / v.k, y: (r.height / 2 - v.y) / v.k };
   }
   function novo(tipo, texto, x, y) {
-    const n = { id: uid(), tipo, texto: texto || { caixa: 'Caixa', nota: 'Nota', circulo: 'Círculo', texto: 'Texto' }[tipo], x, y };
+    const n = { id: uid(), tipo, texto: texto || { caixa: 'Caixa', nota: 'Nota', circulo: 'Círculo', losango: 'Losango', triangulo: 'Triângulo', texto: 'Texto' }[tipo], x, y };
+    if (TAMANHO[tipo]) [n.w, n.h] = TAMANHO[tipo];
     est.nos.push(n); return n;
   }
   function adiciona(tipo) {
     foto();
     const c = centro(), j = est.nos.length % 6 * 18;
-    const n = novo(tipo, null, c.x - 70 + j, c.y - 30 + j);
+    const n = novo(tipo, null, c.x - 80 + j, c.y - 40 + j);
     sel = { tipo: 'no', id: n.id }; desenhar(); salvar();
     editar(n.id);
   }
@@ -151,8 +215,21 @@
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;
     const alvo = ev.target;
     if (alvo.closest('.qt[contenteditable="true"], .qt[contenteditable="plaintext-only"]')) return;
+    if (caneta) return traco(ev);
     const h = alvo.closest('.qh'), no = alvo.closest('.qn'), seta = alvo.closest('[data-seta]');
     if (h && no) return ligando(ev, no.dataset.id);
+
+    if (alvo.closest('.qr') && no) {
+      const n = est.nos.find(x => x.id === no.dataset.id);
+      sel = { tipo: 'no', id: n.id };
+      const p0 = ponto(ev), w0 = no.offsetWidth, h0 = no.offsetHeight;
+      foto();
+      return arrasta(ev, e => {
+        const p = ponto(e);
+        n.w = Math.max(50, Math.round(w0 + p.x - p0.x)); n.h = Math.max(40, Math.round(h0 + p.y - p0.y));
+        tamanho(no, n); setas(); emite();
+      }, salvar);
+    }
 
     if (no) {
       const n = est.nos.find(x => x.id === no.dataset.id);
@@ -166,7 +243,7 @@
         if (!moveu && Math.hypot(p.x - p0.x, p.y - p0.y) * est.vista.k < 3) return;
         if (!moveu) { foto(); moveu = true; }
         n.x = x0 + p.x - p0.x; n.y = y0 + p.y - p0.y;
-        no.style.left = n.x + 'px'; no.style.top = n.y + 'px'; setas();
+        no.style.left = n.x + 'px'; no.style.top = n.y + 'px'; setas(); emite();
       };
       return arrasta(ev, mv, () => { if (moveu) salvar(); });
     }
@@ -248,18 +325,50 @@
     document.addEventListener('keydown', aoTeclar);
     $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => adiciona(b.dataset.add); });
     $('qModelo').onchange = e => { modelo(e.target.value); e.target.value = ''; };
+    $('qCaneta').onclick = () => { caneta = !caneta; $('qCaneta').classList.toggle('on', caneta); tela.classList.toggle('caneta', caneta); };
     $('qApagar').onclick = apaga;
     $('qDesfazer').onclick = volta;
     $('qMais').onclick = () => zoom(1.2);
     $('qMenos').onclick = () => zoom(1 / 1.2);
-    $('qLimpar').onclick = () => { if (est.nos.length && confirm('Limpar o quadro inteiro?')) { foto(); est = { nos: [], setas: [], vista: { x: 0, y: 0, k: 1 } }; sel = null; desenhar(); salvar(); } };
+    $('qLimpar').onclick = () => { if (est.nos.length && confirm('Limpar o quadro inteiro?')) { foto(); est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } }; sel = null; desenhar(); salvar(); } };
+  }
+
+  /* ---------- sala ao vivo: entradas e saídas ---------- */
+  // ajusta a vista para caber tudo (usado por quem só assiste)
+  function ajusta() {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    est.nos.forEach(n => { const c = caixa(n); if (c) { x0 = Math.min(x0, c.x); y0 = Math.min(y0, c.y); x1 = Math.max(x1, c.x + c.w); y1 = Math.max(y1, c.y + c.h); } });
+    (est.tracos || []).forEach(t => { for (let i = 0; i < t.p.length; i += 2) { x0 = Math.min(x0, t.p[i]); x1 = Math.max(x1, t.p[i]); y0 = Math.min(y0, t.p[i + 1]); y1 = Math.max(y1, t.p[i + 1]); } });
+    const r = $('qTela').getBoundingClientRect();
+    if (!isFinite(x0)) { est.vista = { x: r.width / 2, y: r.height / 2, k: 1 }; return aplicaVista(); }
+    const m = 48, bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0);
+    const k = Math.min(1.6, Math.max(0.1, Math.min((r.width - 2 * m) / bw, (r.height - 2 * m) / bh)));
+    est.vista = { k, x: (r.width - bw * k) / 2 - x0 * k, y: (r.height - bh * k) / 2 - y0 * k };
+    aplicaVista();
   }
 
   window.Quadro = {
+    aoMudar: null, aoVista: null,
     abrir() {
       montar();
       if (!this.carregado) { carregar(); this.carregado = true; }
       desenhar();
+    },
+    estado: () => est,
+    vista: visivel,
+    // traço vindo do tablet (cria ou atualiza) ou apagado por lá
+    addTraco(id, t) {
+      if (!est.tracos) est.tracos = [];
+      const i = est.tracos.findIndex(x => x.id === id);
+      if (i >= 0) { est.tracos[i].p = t.p; est.tracos[i].w = t.w; } else est.tracos.push({ id, p: t.p, w: t.w });
+      tinta(); salvar();
+    },
+    delTraco(id) { est.tracos = (est.tracos || []).filter(x => x.id !== id); tinta(); salvar(); },
+    // só leitura: recebe o quadro inteiro do anfitrião e desenha
+    ver(novo) {
+      est = { nos: [], setas: [], tracos: [], ...novo, vista: { x: 0, y: 0, k: 1 } };
+      desenhar(); ajusta();
+      if (!this.lendo) { this.lendo = true; addEventListener('resize', () => ajusta()); }
     },
   };
 })();
