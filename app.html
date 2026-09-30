@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Medida</title>
+<link rel="icon" type="image/svg+xml" href="assets/marca.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="boot" aria-label="Carregando"><svg viewBox="0 0 180 60"><line x1="0" x2="180" y1="40" y2="40"/><path pathLength="1" d="M4 52C40 52 60 46 86 30S140 6 176 6"/></svg></div>
+<header class="top">
+  <div class="wrap in">
+    <a class="brand" href="index.html"><span class="logo"></span><span id="nome">Medida</span></a>
+    <span class="sp"></span>
+    <span class="user" id="user" hidden></span>
+    <button class="btn ghost sm" id="sair" hidden>Sair</button>
+  </div>
+</header>
+
+<main class="page">
+  <!-- acesso -->
+  <section id="auth" class="auth" hidden>
+    <div class="card">
+      <p class="free-note"><b>100% gratuito, sem cartão.</b> Seus números ficam no seu navegador.</p>
+      <div id="authSetup" class="msg bad" hidden>Login ainda não configurado. Preencha <code>FIREBASE</code> em <code>js/config.js</code> (passo a passo no README).</div>
+      <div id="authMsg" class="msg" hidden></div>
+      <button class="btn ghost" id="google" type="button" style="width:100%"><span class="g">G</span> Continuar com Google</button>
+      <div class="ou"><span>ou com e-mail</span></div>
+      <div class="tabs">
+        <button id="tabEntrar" class="on" type="button">Entrar</button>
+        <button id="tabCadastro" type="button">Criar conta</button>
+      </div>
+      <form id="authForm">
+        <div class="field"><label for="email">E-mail</label>
+          <div class="inp"><input id="email" type="email" autocomplete="email" required></div></div>
+        <div class="field"><label for="senha">Senha</label>
+          <div class="inp"><input id="senha" type="password" autocomplete="current-password" minlength="6" required></div>
+          <div class="hint" id="senhaDica" hidden>Mínimo de 6 caracteres.</div></div>
+        <button class="btn" id="authBtn" style="width:100%">Entrar</button>
+      </form>
+      <p class="hint" style="margin-top:12px;text-align:center"><a href="#" id="esqueci">Esqueci minha senha</a></p>
+    </div>
+  </section>
+
+  <!-- dashboard -->
+  <section id="home" hidden>
+    <h1>Suas calculadoras</h1>
+    <p class="sub">Escolha uma, informe seus números e receba o veredito. Seus números não saem do navegador.</p>
+    <div id="catalogo"></div>
+  </section>
+
+  <!-- calculadora -->
+  <section id="calc" hidden>
+    <div class="solo-print print-head"><span class="brand"><span class="logo"></span>Medida</span><span id="pData"></span></div>
+    <a class="back" href="#/">← Todas as calculadoras</a>
+    <div class="head">
+      <div class="t"><h1 id="cNome"></h1><p class="sub" id="cDesc"></p></div>
+      <button class="btn sem-print" id="pdf" type="button">⬇ Salvar PDF</button>
+    </div>
+    <div class="grid">
+      <section class="card" id="formCard"><h2>Premissas</h2><div id="form"></div></section>
+      <div class="stack">
+        <section class="card solo-print"><h2 id="pTitulo"></h2><ul class="resumo" id="resumo"></ul></section>
+        <div id="diag"></div>
+        <div class="kpis" id="kpis"></div>
+        <div id="extra" class="stack"></div>
+      </div>
+    </div>
+    <p class="solo-print print-foot">Relatório gerado na Medida, veredito de indicadores para SaaS: <span id="pUrl"></span>. Os números foram informados por quem gerou o relatório e ficam só no navegador dele.</p>
+  </section>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/manifest.js"></script>
+<script type="module" src="js/auth.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 48" role="img" aria-label="Medida">
+  <title>Medida</title>
+  <g fill="currentColor">
+    <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="4"/>
+    <path d="M24 4a20 20 0 0 0 0 40z"/>
+    <text x="58" y="35" font-family="Bricolage Grotesque, Helvetica Neue, Arial, sans-serif" font-size="36" font-weight="800" letter-spacing="-1.5">Medida</text>
+  </g>
+</svg>

@@ -3,231 +3,189 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Calculadora de ROI SaaS</title>
-<style>
-  :root {
-    --bg: #f5f6f8; --card: #fff; --text: #14171f; --muted: #6b7280; --line: #e4e7ec;
-    --accent: #4f46e5; --good: #15803d; --warn: #b45309; --bad: #b91c1c;
-    --good-bg: #dcfce7; --warn-bg: #fef3c7; --bad-bg: #fee2e2;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1115; --card: #181b22; --text: #eceef3; --muted: #9aa3b2; --line: #2a2f3a;
-      --accent: #818cf8; --good: #4ade80; --warn: #fbbf24; --bad: #f87171;
-      --good-bg: #12301d; --warn-bg: #33270b; --bad-bg: #3a1414;
-    }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 20px; }
-  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: start; }
-  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 12px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-  .field { margin-bottom: 12px; }
-  .inp { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
-  .inp:focus-within { border-color: var(--accent); }
-  .inp span { padding: 0 10px; color: var(--muted); font-size: 13px; }
-  .inp input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; padding: 9px 10px; outline: none; }
-  .inp span + input { padding-left: 0; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
-  .kpi .name { font-size: 12px; color: var(--muted); }
-  .kpi .val { font-size: 24px; font-weight: 650; margin: 2px 0; font-variant-numeric: tabular-nums; }
-  .kpi .note { font-size: 12px; color: var(--muted); }
-  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
-  .good { background: var(--good-bg); color: var(--good); }
-  .warn { background: var(--warn-bg); color: var(--warn); }
-  .bad { background: var(--bad-bg); color: var(--bad); }
-  svg { width: 100%; height: auto; display: block; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
-  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-  th:first-child, td:first-child { text-align: left; }
-  th { color: var(--muted); font-weight: 500; }
-  td.neg { color: var(--bad); } td.pos { color: var(--good); }
-  .scroll { max-height: 300px; overflow: auto; }
-  .stack > * + * { margin-top: 16px; }
-</style>
+<title>Medida · o veredito dos indicadores do seu SaaS</title>
+<meta name="description" content="Seu CAC, LTV ou churn está bom ou ruim? A Medida calcula e dá o veredito, com o que fazer primeiro. Para SaaS e software houses. Grátis, sem cartão.">
+<link rel="icon" type="image/svg+xml" href="assets/marca.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<main>
-  <h1>Calculadora de ROI para SaaS</h1>
-  <p class="sub">Receita recorrente: CAC, LTV, payback, break-even e ROI da operação de tráfego.</p>
+<header class="top">
+  <div class="wrap in">
+    <a class="brand" href="#"><span class="logo"></span>Medida</a>
+    <span class="sp"></span>
+    <nav>
+      <a class="l" href="#como">Como funciona</a>
+      <a class="l" href="#calculadoras">Calculadoras</a>
+      <a class="btn sm" href="app.html">Entrar</a>
+    </nav>
+  </div>
+</header>
 
-  <div class="grid">
-    <section class="card" id="form">
-      <h2>Premissas</h2>
-      <div class="field"><label for="invest">Investimento em tráfego (mês)</label>
-        <div class="inp"><span>R$</span><input id="invest" type="number" min="0" step="any" value="10000"></div></div>
-      <div class="field"><label for="outros">Outros custos de aquisição (mês)</label>
-        <div class="inp"><span>R$</span><input id="outros" type="number" min="0" step="any" value="0"></div>
-        <div class="hint">Comissão, time de vendas, ferramentas, criativos.</div></div>
-      <div class="field"><label for="vendas">Novos clientes (mês)</label>
-        <div class="inp"><input id="vendas" type="number" min="0" step="any" value="25"></div></div>
-      <div class="field"><label for="ticket">Ticket médio (mensalidade por cliente)</label>
-        <div class="inp"><span>R$</span><input id="ticket" type="number" min="0" step="any" value="497"></div></div>
-      <div class="field"><label for="margem">Margem variável</label>
-        <div class="inp"><input id="margem" type="number" min="0" max="100" step="any" value="80"><span>%</span></div>
-        <div class="hint">Receita menos custos que variam por cliente: infra, gateway, impostos e suporte.</div></div>
-      <div class="field"><label for="churn">Churn mensal</label>
-        <div class="inp"><input id="churn" type="number" min="0" max="100" step="any" value="4"><span>%</span></div></div>
-      <div class="field"><label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="impl" type="checkbox"> Cobra implantação (ativação)?</label>
-        <div class="hint">O lucro da implantação abate o CAC.</div></div>
-      <div id="implCampos" hidden>
-        <div class="field"><label for="implValor">Valor da implantação (por cliente)</label>
-          <div class="inp"><span>R$</span><input id="implValor" type="number" min="0" step="any" value="500"></div></div>
-        <div class="field"><label for="implMargem">Margem de lucro da implantação</label>
-          <div class="inp"><input id="implMargem" type="number" min="0" max="100" step="any" value="60"><span>%</span></div>
-          <div class="hint">Valor menos o custo de entregar a implantação (time, horas, ferramentas).</div></div>
+<section class="hero">
+  <div class="wrap">
+    <h1><span class="ln"><span>Seu SaaS está saudável?</span></span><span class="ln"><span>A Medida dá o veredito.</span></span></h1>
+    <div class="row">
+      <p class="lead">CAC, LTV, churn e ROAS para SaaS e software houses: o que está bom, o que aperta e onde agir primeiro.</p>
+      <div class="cta">
+        <a class="btn lg" href="app.html#cadastro">Ver meu veredito</a>
+        <a class="btn ghost lg" href="#instr">Ver um exemplo</a>
       </div>
-      <div class="field"><label for="leads">Leads gerados (mês) <small>(opcional)</small></label>
-        <div class="inp"><input id="leads" type="number" min="0" step="any" value="0"></div>
-        <div class="hint">Preenchido, mostra o CPL e a conversão lead → cliente.</div></div>
-      <div class="field" style="margin-bottom:0"><label for="horizonte">Horizonte de análise</label>
-        <div class="inp"><input id="horizonte" type="number" min="1" max="60" step="1" value="12"><span>meses</span></div></div>
-    </section>
+      <span class="selo">100% gratuito, sem cartão</span>
+    </div>
 
-    <div class="stack">
-      <div class="kpis" id="kpis"></div>
-
-      <section class="card">
-        <h2>Lucro acumulado da coorte (líquido do investimento)</h2>
-        <div id="chart"></div>
-      </section>
-
-      <section class="card">
-        <h2>Mês a mês</h2>
-        <div class="scroll"><table id="tabela"></table></div>
-      </section>
+    <!-- Este painel roda o mesmo cálculo da calculadora de ROI SaaS: ticket R$ 97, churn 8%, 25 clientes, R$ 10.000 investidos. -->
+    <div class="instr inv" id="instr" aria-label="Exemplo: LTV sobre CAC de 2,43x, com retorno do investimento em 6,4 meses">
+      <div>
+        <div class="lab">Exemplo · LTV / CAC</div>
+        <div class="big" id="big">0,00x</div>
+        <span class="badge warn">apertado (abaixo de 3x)</span>
+        <p class="veredito">A operação se paga em 6,4 meses, mas com pouca folga. Cortar o churn de 8% para 4% levaria o LTV/CAC a 4,85x.</p>
+      </div>
+      <svg viewBox="0 0 600 280" id="chart" role="img" aria-label="Lucro acumulado por mês, cruzando o zero no mês 6,4"></svg>
     </div>
   </div>
-</main>
+</section>
 
+<section class="free" id="gratis">
+  <div class="wrap">
+    <h2>100% gratuito.<br>E sempre será.</h2>
+    <div class="promessas">
+      <p><b>Sem cartão de crédito.</b> Você não informa dado de pagamento em nenhum momento.</p>
+      <p><b>Sem plano pago.</b> Todas as calculadoras, os vereditos e o PDF estão incluídos. Não há plano pago.</p>
+      <p><b>Sem guardar seus números.</b> Os números que você digita nas calculadoras não saem do seu navegador.</p>
+    </div>
+    <a class="btn lg" href="app.html#cadastro">Ver meu veredito, de graça</a>
+  </div>
+</section>
+
+<section class="sec" id="como">
+  <div class="wrap">
+    <h2 class="t">Três passos até o veredito.</h2>
+    <p class="s">Você preenche; a Medida calcula e aponta onde agir primeiro.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Crie sua conta</h3><p>Entre com o Google em um clique, ou com e-mail e senha.</p></div>
+      <div class="step"><div class="n">2</div><h3>Escolha a calculadora</h3><p>Aquisição, retenção, tráfego pago, equilíbrio e preço. Cada uma responde a uma pergunta do seu SaaS.</p></div>
+      <div class="step"><div class="n">3</div><h3>Receba o veredito</h3><p>Cada indicador vem com uma leitura clara do que está bom, do que está no limite e onde agir primeiro.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec inv" id="por-dentro">
+  <div class="wrap">
+    <h2 class="t">O veredito, por dentro.</h2>
+    <p class="s">Três telas: o catálogo, a conta em tempo real e o veredito com PDF.</p>
+    <div class="inside">
+      <figure>
+        <div class="mock" aria-hidden="true"><div class="bar"><i></i><i></i><i></i><u>Suas calculadoras</u></div>
+          <div class="body">
+            <div class="row"><div><b>ROI de aquisição SaaS</b><small>CAC, LTV, payback e ROI</small></div></div>
+            <div class="row"><div><b>Churn e retenção</b><small>Quanto da base você perde</small></div></div>
+            <div class="row"><div><b>Funil de tráfego pago</b><small>CPL, CPA e ROAS</small></div></div>
+            <div class="row"><div><b>Ponto de equilíbrio</b><small>Clientes para cobrir os custos</small></div></div>
+          </div></div>
+        <figcaption><b>O catálogo</b>Uma calculadora para cada pergunta do seu SaaS.</figcaption>
+      </figure>
+      <figure>
+        <div class="mock" aria-hidden="true"><div class="bar"><i></i><i></i><i></i><u>Churn e retenção</u></div>
+          <div class="body">
+            <div class="two"><div class="in-f"><div>Clientes · 400</div><div>Novos · 30</div><div>Perdidos · 16</div><div>Ticket · R$ 297</div></div>
+            <div class="k3" style="align-content:start"><div class="k"><small>Churn</small><b>4%</b></div><div class="k"><small>Vida média</small><b>25 m</b></div><div class="k"><small>MRR perdido</small><b>R$ 4,7k</b></div></div></div>
+          </div></div>
+        <figcaption><b>Você preenche, ela calcula</b>O resultado muda a cada número que você digita.</figcaption>
+      </figure>
+      <figure>
+        <div class="mock" aria-hidden="true"><div class="bar"><i></i><i></i><i></i><u>Veredito</u></div>
+          <div class="body">
+            <div class="dg w">◐ Churn em zona de atenção<span>Perder 4% ao mês equivale a perder 39% da base em um ano.</span></div>
+            <div class="pdf"><div class="ln" style="width:92%"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:85%"></div></div>
+            <div class="row" style="justify-content:center"><b>Salvar PDF</b></div>
+          </div></div>
+        <figcaption><b>Veredito e PDF</b>Uma leitura direta do que fazer, pronta para levar à reunião.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="calculadoras">
+  <div class="wrap">
+    <h2 class="t">Uma pergunta por calculadora.</h2>
+    <p class="s">Oito áreas da empresa, com pelo menos cinco calculadoras em cada, todas com veredito.</p>
+    <div class="list" id="lista"></div>
+  </div>
+</section>
+
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="facts">
+      <div class="fact"><h3>Veredito, não só número</h3><p>Cada resultado vem com uma leitura do que ele significa para o seu SaaS e o que fazer primeiro.</p></div>
+      <div class="fact"><h3>Seus números não saem do navegador</h3><p>O que você digita nas calculadoras não é enviado nem guardado. Fechou a página, os números somem. Para guardar, salve o PDF.</p></div>
+      <div class="fact"><h3>Relatório em PDF</h3><p>Com as premissas usadas e o veredito, pronto para levar à reunião ou ao board.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" style="padding-top:0">
+  <div class="wrap"><div class="ctaf inv">
+    <h2>Descubra onde seu SaaS vaza. Sem achismo.</h2>
+    <a class="btn lg" href="app.html#cadastro">Ver meu veredito</a>
+  </div></div>
+</section>
+
+<footer class="f"><div class="wrap">© <span id="ano"></span> Medida · veredito de indicadores para SaaS · <a href="app.html">Entrar</a></div></footer>
+
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/manifest.js"></script>
 <script>
-const $ = id => document.getElementById(id);
-const brl = v => isFinite(v) ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) : '—';
-const num = (v, d = 1) => isFinite(v) ? v.toLocaleString('pt-BR', { maximumFractionDigits: d }) : '—';
-const pct = v => isFinite(v) ? num(v * 100, 1) + '%' : '—';
-const val = id => Math.max(0, parseFloat($(id).value) || 0);
+  document.getElementById('ano').textContent = new Date().getFullYear();
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  carregarCalculadoras().then(() => {
+    const areas = {};
+    CALCULADORAS.forEach(c => (areas[c.categoria] = areas[c.categoria] || []).push(c.nome));
+    document.getElementById('lista').innerHTML = Object.entries(areas).map(([area, nomes]) =>
+      `<a class="item" href="app.html#cadastro"><b>${esc(area)}</b><span class="d">${esc(nomes.join(' · '))}</span><span class="tag">${nomes.length} calculadoras</span></a>`).join('');
+  });
 
-function calcular() {
-  const invest = val('invest'), outros = val('outros'), vendas = val('vendas'),
-        ticket = val('ticket'), margem = Math.min(val('margem'), 100) / 100,
-        churn = Math.min(val('churn'), 100) / 100, leads = val('leads'),
-        H = Math.min(Math.max(Math.round(val('horizonte')) || 12, 1), 60);
-
-  const custoTotal = invest + outros;
-  const cobraImpl = $('impl').checked;
-  const implValor = cobraImpl ? val('implValor') : 0;
-  const implMargem = Math.min(val('implMargem'), 100) / 100;
-  const lucroImpl = implValor * implMargem;            // lucro da implantação por cliente
-  const cacBruto = vendas > 0 ? custoTotal / vendas : NaN;
-  const cac = vendas > 0 ? Math.max(0, cacBruto - lucroImpl) : NaN; // CAC líquido, abatido da implantação
-  const margemCliente = ticket * margem;               // contribuição mensal por cliente
-  const vida = churn > 0 ? 1 / churn : Infinity;       // meses
-  const ltv = margemCliente * vida;                    // LTV pela margem
-  const ltvReceita = ticket * vida;
-  const ltvCac = ltv / cac;
-  const paybackSimples = margemCliente > 0 ? cac / margemCliente : NaN;
-  const novoMrr = vendas * ticket;
-  const roas = invest > 0 ? novoMrr / invest : NaN;
-  const cacMaxSaudavel = ltv / 3;
-  const beClientes = margemCliente + lucroImpl > 0 ? custoTotal / (margemCliente + lucroImpl) : NaN; // clientes p/ pagar o custo no 1º mês
-
-  // simulação da coorte, mês a mês (até 60 meses para achar o break-even)
-  const linhas = [];
-  const acum0 = -custoTotal + vendas * lucroImpl;      // caixa inicial: investimento menos lucro da implantação
-  let acum = acum0, ativos = vendas, breakEven = acum0 >= 0 ? 0 : NaN, prev = acum;
-  for (let t = 1; t <= 60; t++) {
-    const mrr = ativos * ticket, contrib = mrr * margem;
-    prev = acum; acum += contrib;
-    if (isNaN(breakEven) && acum >= 0 && custoTotal >= 0) {
-      breakEven = contrib > 0 ? (t - 1) + (0 - prev) / contrib : t;
+  /* Instrumento do hero: a mesma conta do ROI SaaS (coorte mês a mês) desenhada com os números do exemplo. */
+  (function () {
+    const invest = 10000, clientes = 25, ticket = 97, margem = 0.8, churn = 0.08, H = 12;
+    const pts = [{ t: 0, v: -invest }];
+    let ativos = clientes, acum = -invest, be = NaN;
+    for (let t = 1; t <= H; t++) {
+      const prev = acum, contrib = ativos * ticket * margem;
+      acum += contrib; ativos *= 1 - churn;
+      if (isNaN(be) && acum >= 0) be = (t - 1) + (0 - prev) / contrib;
+      pts.push({ t, v: acum });
     }
-    linhas.push({ t, ativos, mrr, contrib, acum });
-    ativos *= (1 - churn);
-  }
-  const noHorizonte = linhas[H - 1];
-  const lucroH = noHorizonte.acum;
-  const roiH = custoTotal > 0 ? lucroH / custoTotal : NaN;
-  const roiVida = custoTotal > 0 && isFinite(ltv) ? (ltv * vendas + vendas * lucroImpl - custoTotal) / custoTotal : NaN;
+    const W = 600, Hh = 280, m = { l: 8, r: 8, t: 24, b: 30 };
+    const min = Math.min(...pts.map(p => p.v)), max = Math.max(...pts.map(p => p.v));
+    const x = t => m.l + t / H * (W - m.l - m.r), y = v => m.t + (1 - (v - min) / (max - min)) * (Hh - m.t - m.b);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ',' + y(p.v).toFixed(1)).join(' ');
+    const meses = [0, 3, 6, 9, 12].map(t => `<text class="ax" x="${x(t)}" y="${Hh - 6}" text-anchor="${t === 0 ? 'start' : t === H ? 'end' : 'middle'}">mês ${t}</text>`).join('');
+    const bx = x(be), by = y(0);
+    document.getElementById('chart').innerHTML =
+      `<line class="zero" x1="${m.l}" x2="${W - m.r}" y1="${by}" y2="${by}"/>${meses}` +
+      `<path class="curva" pathLength="1" d="${d}"/>` +
+      `<circle class="be" cx="${bx}" cy="${by}" r="9"/>` +
+      `<text class="belab" x="${bx}" y="${by - 20}" text-anchor="middle">retorno em ${be.toFixed(1).replace('.', ',')} meses</text>`;
 
-  return { invest, custoTotal, vendas, leads, H, cac, cacBruto, lucroImpl, acum0, ltv, ltvReceita, ltvCac, vida, paybackSimples,
-           novoMrr, roas, cacMaxSaudavel, beClientes, breakEven, lucroH, roiH, roiVida, margemCliente, linhas };
-}
-
-const badge = (cls, txt) => `<span class="badge ${cls}">${txt}</span>`;
-const kpi = (name, value, note, b = '') => `<div class="kpi"><div class="name">${name}</div><div class="val">${value}</div><div class="note">${note} ${b}</div></div>`;
-
-function render() {
-  const r = calcular();
-
-  const bLtvCac = !isFinite(r.ltvCac) ? (r.ltvCac > 0 ? badge('good', 'excelente') : '')
-    : r.ltvCac >= 3 ? badge('good', 'saudável (≥ 3x)') : r.ltvCac >= 1 ? badge('warn', 'apertado (< 3x)') : badge('bad', 'destrói valor (< 1x)');
-  const bPay = isNaN(r.breakEven) ? badge('bad', 'não paga em 60m')
-    : r.breakEven <= 6 ? badge('good', 'rápido') : r.breakEven <= 12 ? badge('warn', 'ok') : badge('bad', 'lento (> 12m)');
-  const bRoi = isNaN(r.roiH) ? '' : r.roiH >= 0 ? badge('good', 'positivo') : badge('bad', 'negativo');
-
-  let k = '';
-  k += r.lucroImpl > 0
-    ? kpi('CAC líquido', brl(r.cac), `CAC bruto ${brl(r.cacBruto)} − lucro da implantação ${brl(r.lucroImpl)}`)
-    : kpi('CAC', brl(r.cac), `${brl(r.custoTotal)} ÷ ${num(r.vendas, 1)} clientes`);
-  if (r.lucroImpl > 0) k += kpi('Lucro total da implantação', brl(r.lucroImpl * r.vendas), `${num(r.vendas, 1)} clientes × ${brl(r.lucroImpl)}`);
-  k += kpi('LTV (margem)', isFinite(r.ltv) ? brl(r.ltv) : '∞', `vida útil média: ${isFinite(r.vida) ? num(r.vida, 1) + ' meses' : 'sem churn'}`);
-  k += kpi('LTV / CAC', isFinite(r.ltvCac) ? num(r.ltvCac, 2) + 'x' : '∞', 'meta: 3x ou mais', bLtvCac);
-  k += kpi('Break-even da coorte', isNaN(r.breakEven) ? '—' : num(r.breakEven, 1) + ' meses', 'considera o churn mês a mês', bPay);
-  k += kpi('Payback do CAC (simples)', isNaN(r.paybackSimples) ? '—' : num(r.paybackSimples, 1) + ' meses', 'CAC líquido ÷ margem mensal por cliente, sem churn');
-  k += kpi(`ROI em ${r.H} meses`, pct(r.roiH), `lucro acumulado ${brl(r.lucroH)}`, bRoi);
-  k += kpi('ROI no LTV (vida toda)', pct(r.roiVida), 'retorno total da coorte sobre o custo');
-  k += kpi('Novo MRR gerado', brl(r.novoMrr), `ARR: ${brl(r.novoMrr * 12)}`);
-  k += kpi('ROAS (1º mês)', isNaN(r.roas) ? '—' : num(r.roas, 2) + 'x', 'novo MRR ÷ investimento em tráfego');
-  k += kpi('Margem por cliente/mês', brl(r.margemCliente), `LTV pela receita: ${isFinite(r.ltvReceita) ? brl(r.ltvReceita) : '∞'}`);
-  k += kpi('CAC máximo p/ LTV/CAC 3x', isFinite(r.cacMaxSaudavel) ? brl(r.cacMaxSaudavel) : '∞', 'teto de CAC para manter a operação saudável');
-  k += kpi('Clientes p/ pagar o custo no mês 1', isNaN(r.beClientes) ? '—' : num(r.beClientes, 1), 'ponto de equilíbrio do primeiro mês');
-  if (r.leads > 0) {
-    k += kpi('CPL', brl(r.invest / r.leads), `${num(r.leads, 0)} leads no mês`);
-    k += kpi('Conversão lead → cliente', pct(r.vendas / r.leads), `${num(r.vendas, 1)} vendas`);
-  }
-  $('kpis').innerHTML = k;
-
-  desenharGrafico(r);
-
-  const cab = '<tr><th>Mês</th><th>Clientes ativos</th><th>MRR</th><th>Margem</th><th>Acumulado</th></tr>';
-  const corpo = r.linhas.slice(0, r.H).map(l =>
-    `<tr><td>${l.t}</td><td>${num(l.ativos, 1)}</td><td>${brl(l.mrr)}</td><td>${brl(l.contrib)}</td><td class="${l.acum >= 0 ? 'pos' : 'neg'}">${brl(l.acum)}</td></tr>`).join('');
-  $('tabela').innerHTML = cab + corpo;
-}
-
-function desenharGrafico(r) {
-  const W = 640, Hh = 240, m = { l: 64, r: 12, t: 12, b: 28 };
-  const pts = [{ t: 0, acum: r.acum0 }, ...r.linhas.slice(0, r.H)];
-  const ys = pts.map(p => p.acum);
-  let min = Math.min(...ys, 0), max = Math.max(...ys, 0);
-  if (min === max) max = min + 1;
-  const x = t => m.l + (t / r.H) * (W - m.l - m.r);
-  const y = v => m.t + (1 - (v - min) / (max - min)) * (Hh - m.t - m.b);
-  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.acum).toFixed(1)}`).join(' ');
-  const ticks = [min, min + (max - min) / 2, max].map(v =>
-    `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${brl(v)}</text>`).join('');
-  const passo = Math.max(1, Math.ceil(r.H / 12));
-  const xl = pts.filter(p => p.t % passo === 0).map(p =>
-    `<text x="${x(p.t)}" y="${Hh - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${p.t}</text>`).join('');
-  const be = (!isNaN(r.breakEven) && r.breakEven <= r.H)
-    ? `<circle cx="${x(r.breakEven)}" cy="${y(0)}" r="5" fill="var(--good)"/><text x="${x(r.breakEven)}" y="${y(0) - 10}" text-anchor="middle" font-size="11" fill="var(--good)">break-even ${num(r.breakEven, 1)}m</text>` : '';
-  $('chart').innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Lucro acumulado por mês">
-    ${ticks}<line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="4 3"/>
-    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>${be}${xl}</svg>`;
-}
-
-document.querySelectorAll('#form input').forEach(i => i.addEventListener('input', () => {
-  $('implCampos').hidden = !$('impl').checked;
-  render();
-}));
-render();
+    const alvo = 2.43, el = document.getElementById('big'), box = document.getElementById('instr');
+    const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fmt = v => v.toFixed(2).replace('.', ',') + 'x';
+    if (reduz) { el.textContent = fmt(alvo); box.classList.add('go'); return; }
+    setTimeout(() => {
+      box.classList.add('go');
+      const t0 = performance.now(), dur = 2200;
+      (function passo(n) {
+        const k = Math.min(1, (n - t0) / dur);
+        el.textContent = fmt(alvo * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(passo);
+      })(t0);
+    }, 500);
+  })();
 </script>
 </body>
 </html>

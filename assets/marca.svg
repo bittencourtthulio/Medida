@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <style>.k{fill:#0a0a0a}.s{stroke:#0a0a0a}.b{fill:#fff}@media (prefers-color-scheme:dark){.k{fill:#fafafa}.s{stroke:#fafafa}.b{fill:#0a0a0a}}</style>
+  <circle cx="24" cy="24" r="20" class="b s" fill="none" stroke-width="4"/>
+  <path d="M24 4a20 20 0 0 0 0 40z" class="k"/>
+</svg>
