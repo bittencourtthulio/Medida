@@ -224,9 +224,37 @@
         ${f.dica ? `<div class="hint">${esc(f.dica)}</div>` : ''}</div>`;
     }).join('');
     $('form').querySelectorAll('input').forEach(i => i.addEventListener('input', renderizar));
+    aplicaLink(c);
     renderizar();
     revelar();
   }
+
+  /* ---------- link compartilhável: #/calc/<id>?campo=valor&... (os números vão só na URL, nada é guardado) ---------- */
+  function aplicaLink(c) {
+    const q = location.hash.split('?')[1];
+    if (!q) return;
+    const p = new URLSearchParams(q);
+    c.campos.forEach(f => {
+      if (!p.has(f.id)) return;
+      const el = $('c_' + f.id), x = p.get(f.id);
+      if (f.tipo === 'checkbox') { el.checked = x === '1'; return; }
+      const n = Number(x);
+      if (x !== '' && isFinite(n) && n >= 0) el.value = f.max != null ? Math.min(n, f.max) : n;
+    });
+  }
+
+  function linkDaCalculadora() {
+    const p = new URLSearchParams();
+    atual.campos.forEach(f => { const el = $('c_' + f.id); p.set(f.id, f.tipo === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
+    return `${location.origin}${location.pathname}#/calc/${atual.id}?${p}`;
+  }
+
+  $('link').onclick = async () => {
+    const url = linkDaCalculadora(), b = $('link');
+    try { await navigator.clipboard.writeText(url); b.textContent = '✓ Link copiado'; }
+    catch { history.replaceState(null, '', url.slice(location.origin.length)); b.textContent = 'Copie o link na barra de endereço'; }
+    clearTimeout(b.t); b.t = setTimeout(() => { b.textContent = '🔗 Copiar link'; }, 2200);
+  };
 
   // revelação única ao abrir a calculadora (não repete a cada número digitado)
   function revelar() {

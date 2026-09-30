@@ -424,3 +424,4 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .side .play + .side-foot { margin-top: 12px; }
 .leg.h svg .ln.dash { stroke-dasharray: 8 5; }
 .leg.h svg .ln.dot { stroke-dasharray: 1 6; }
+.acoes-head { display: flex; gap: 8px; flex-wrap: wrap; }
