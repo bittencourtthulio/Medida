@@ -57,6 +57,13 @@ registrar({
         { nome: 'Diferença por ano', valor: (difMrr > 0 ? '+' : '') + brl(difMrr * 12), nota: 'MRR vs mercado × 12' },
         { nome: 'Churn mensal', valor: num(v.churn) + '%', nota: 'informado por você' },
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Seu preço contra o mercado, por mês', formato: 'brl',
+          dados: [{ rotulo: 'Seu preço', valor: v.preco, tom: 'cheio' }, { rotulo: 'Mercado', valor: v.mercado, tom: 'hachurado' }] },
+        { tipo: 'composicao', titulo: 'Seu MRR: o que fica e o que o churn leva por mês', formato: 'brl',
+          nota: 'MRR estimado como clientes × mensalidade. A parte perdida é a que sai se o churn informado se repetir no mês.',
+          partes: [{ rotulo: 'MRR que permanece', valor: v.clientes * v.preco * (1 - churn), tom: 'cheio' }, { rotulo: 'MRR perdido por churn', valor: v.clientes * v.preco * churn, tom: 'vazado' }] },
+      ],
       diagnostico: { tipo, titulo, texto, pontos },
     };
   },

@@ -354,3 +354,73 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
   .side, .bar, #palette, #scrim, #topAuth { display: none !important; }
 }
 .m .btn, .m .chip { font-family: var(--display); }
+
+/* ===== Largura total no app + dashboard das calculadoras ===== */
+#shell .page { max-width: none; padding: 28px clamp(16px, 2.4vw, 40px) 64px; }
+#shell .grid { grid-template-columns: 340px minmax(0, 1fr); }
+@media (max-width: 880px) { #shell .grid { grid-template-columns: 1fr; } }
+.kpis .kpi:first-child { grid-column: span 2; }
+.kpis .kpi:first-child .val { font-size: 40px; letter-spacing: -.04em; }
+@media (max-width: 520px) { .kpis .kpi:first-child { grid-column: auto; } }
+.kpis { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.paineis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); gap: 16px; }
+.pc { border: 1.5px solid var(--line); border-radius: 22px; padding: 18px 20px; background: var(--paper); break-inside: avoid; min-width: 0; }
+.pc.largo { grid-column: 1 / -1; }
+.pc h2 { font-size: 13px; font-weight: 600; color: var(--mute); margin: 0 0 12px; letter-spacing: 0; }
+.pc .pn { font-family: var(--text); font-size: 14px; color: var(--mute); margin: -4px 0 12px; line-height: 1.4; }
+.tw { overflow: auto; max-height: 360px; }
+
+/* barras horizontais, funil, composição */
+.bars, .fun { display: grid; gap: 10px; }
+.br, .fr { display: grid; grid-template-columns: minmax(84px, 30%) 1fr auto; gap: 12px; align-items: center; font-size: 13px; }
+.bl, .fl { color: var(--ink); font-weight: 500; line-height: 1.25; }
+.bt, .ft { position: relative; height: 22px; background: var(--soft); border-radius: 7px; overflow: hidden; }
+.bv { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 64px; text-align: right; }
+.b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 7px; }
+.cheio { background: var(--ink); }
+.hachurado { background: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 6px); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.pontilhado { background: radial-gradient(var(--ink) 1.3px, transparent 1.5px) 0 0 / 6px 6px; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.vazado { background: transparent; box-shadow: inset 0 0 0 2px var(--ink); }
+.cinza { background: color-mix(in srgb, var(--ink) 35%, var(--paper)); }
+.meta { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2.5px dashed var(--ink); }
+.meta.inl { position: static; display: inline-block; height: 12px; vertical-align: middle; }
+.bleg { font-size: 12px; color: var(--mute); margin-top: 2px; }
+.fc { font-size: 12px; color: var(--mute); padding-left: calc(30% + 12px); margin: -4px 0; }
+.comp-bar { display: flex; height: 30px; border-radius: 10px; overflow: hidden; gap: 2px; background: var(--paper); }
+.seg { display: block; min-width: 2px; }
+.leg { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.leg li { display: grid; grid-template-columns: 18px 1fr auto auto; gap: 10px; align-items: center; font-size: 13px; }
+.leg li b { font-variant-numeric: tabular-nums; }
+.leg li small { color: var(--mute); min-width: 38px; text-align: right; }
+.sw { width: 16px; height: 16px; border-radius: 4px; display: block; }
+.leg.h { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 10px; }
+.leg.h li { display: flex; gap: 8px; }
+
+/* linha e cascata */
+.chart { width: 100%; height: auto; overflow: visible; }
+.chart .gl { stroke: var(--line); stroke-width: 1; }
+.chart .zl { stroke: var(--mute); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .ax { font: 500 11px var(--display); fill: var(--mute); }
+.chart .mt { font: 700 12px var(--display); fill: var(--ink); }
+.chart .ln { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart .ln.dash { stroke-width: 2.5; stroke-dasharray: 8 5; }
+.chart .ln.dot { stroke-width: 2.5; stroke-dasharray: 1 6; }
+.chart .mk { fill: var(--paper); stroke: var(--ink); stroke-width: 3; }
+.chart .cn { stroke: var(--mute); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .cb.cheio { fill: var(--ink); }
+.chart .cb.hachurado { fill: url(#pHatch); stroke: var(--ink); stroke-width: 1.5; }
+.chart .cb.vazado { fill: none; stroke: var(--ink); stroke-width: 2; }
+.eixo-x { text-align: center; font-size: 12px; color: var(--mute); margin-top: 2px; }
+.leg.h svg .ln { stroke: var(--ink); fill: none; }
+@media print { .pc { break-inside: avoid; } .paineis { display: block; } .pc { margin-bottom: 12px; } }
+
+/* CTA discreto: ExpX Play (rodapé do menu, acima do usuário) */
+.play { display: block; text-decoration: none; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 13px; transition: border-color .15s, background .15s; }
+.play:hover { border-color: var(--ink); background: var(--soft); }
+.play b { display: block; font-size: 14px; letter-spacing: -.02em; }
+.play span { display: block; font-family: var(--text); font-size: 14px; color: var(--mute); line-height: 1.35; margin: 3px 0 6px; }
+.play small { font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.side .play { margin-top: auto; }
+.side .play + .side-foot { margin-top: 12px; }
+.leg.h svg .ln.dash { stroke-dasharray: 8 5; }
+.leg.h svg .ln.dot { stroke-dasharray: 1 6; }

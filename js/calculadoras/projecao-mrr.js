@@ -63,6 +63,15 @@ registrar({
       bad: `Com ${num(v.churn)}% de churn, o MRR perde mais do que o novo MRR repõe${temTeto ? ` e tende a ${brl(teto)}` : ''}.`,
     }[tipo];
 
+    const serie = [{ nome: 'MRR projetado', pontos: [{ x: 0, y: v.mrr }, ...linhas.map(l => ({ x: l.t, y: l.fim }))] }];
+    if (temTeto) serie.push({ nome: 'MRR de equilíbrio (teto)', pontos: [{ x: 0, y: teto }, { x: 12, y: teto }] });
+    const paineis = [
+      { tipo: 'linha', titulo: 'MRR nos próximos 12 meses', formato: 'brl', eixoX: 'meses', largo: true, series: serie },
+      { tipo: 'barras', titulo: 'O que entra e o que sai do MRR no primeiro mês', formato: 'brl',
+        dados: [{ rotulo: 'Novo MRR', valor: v.novo, tom: 'cheio' }, { rotulo: 'Expansão', valor: expRs, tom: 'hachurado' }, { rotulo: 'Churn', valor: churnRs, tom: 'vazado' }] },
+      { tipo: 'tabela', titulo: `Mês a mês (MRR atual ${brl(v.mrr)})`, colunas: ['Mês', 'Novo MRR', 'Expansão', 'Churn', 'MRR no fim'],
+        linhas: linhas.map(l => [String(l.t), brl(l.novo), brl(l.expande), { v: brl(l.sai), tom: 'neg' }, brl(l.fim)]) },
+    ];
     return {
       kpis: [
         { nome: 'MRR em 6 meses', valor: brl(m6), nota: 'projeção mês a mês' },
@@ -72,16 +81,8 @@ registrar({
         { nome: 'MRR de equilíbrio', valor: temTeto ? brl(teto) : 'sem teto', nota: temTeto ? 'onde novo + expansão = churn' : 'expansão ≥ churn: o MRR não trava' },
       ],
       diagnostico: { tipo, titulo, texto, pontos },
-      extra: tabelaProjecaoMrr(linhas, v.mrr),
+      paineis,
     };
   },
 });
-
-function tabelaProjecaoMrr(linhas, mrr0) {
-  const { brl } = fmt;
-  const corpo = linhas.map(l =>
-    `<tr><td>${l.t}</td><td>${brl(l.novo)}</td><td>${brl(l.expande)}</td><td class="neg">${brl(l.sai)}</td><td>${brl(l.fim)}</td></tr>`).join('');
-  return `<section class="card"><h2>Mês a mês (MRR atual ${brl(mrr0)})</h2><div class="scroll"><table>
-    <tr><th>Mês</th><th>Novo MRR</th><th>Expansão</th><th>Churn</th><th>MRR no fim</th></tr>${corpo}</table></div></section>`;
-}
 })();

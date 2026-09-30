@@ -49,6 +49,12 @@ registrar({
         { nome: 'Detratores', valor: pct(pd), nota: `${num(v.detratores, 0)} respostas` },
         { nome: 'MRR exposto (estimativa)', valor: temBase ? brl(mrrRisco) : '—', nota: 'base × % detratores × ticket; proporcional à amostra, não previsão' },
       ],
+      paineis: [
+        { tipo: 'composicao', titulo: 'Como as respostas se dividem', formato: 'int',
+          partes: [{ rotulo: 'Promotores', valor: v.promotores, tom: 'cheio' }, { rotulo: 'Neutros', valor: v.neutros, tom: 'pontilhado' }, { rotulo: 'Detratores', valor: v.detratores, tom: 'vazado' }] },
+        ...(temBase ? [{ tipo: 'barras', titulo: 'MRR por grupo, se a amostra valesse para a base', nota: 'Estimativa proporcional, não previsão de cancelamento.', formato: 'brl',
+          dados: [{ rotulo: 'Promotores', valor: v.base * pp * v.ticket, tom: 'cheio' }, { rotulo: 'Neutros', valor: v.base * pn * v.ticket, tom: 'pontilhado' }, { rotulo: 'Detratores (exposto)', valor: mrrRisco, tom: 'vazado' }] }] : []),
+      ],
       diagnostico: {
         tipo,
         titulo: nps < 0 ? 'Mais detratores que promotores' : tipo === 'warn' ? 'Promotores na frente, mas com muitos detratores' : 'Promotores na frente',

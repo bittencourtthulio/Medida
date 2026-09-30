@@ -3,6 +3,7 @@ registrar({
   id: 'custo-de-implantacao',
   nome: 'Custo de implantação',
   categoria: 'Entrega e Operação',
+  termos: 'implantação onboarding setup fee taxa de implantação custo de onboarding cobrar implantação payback da implantação time to value integração treinamento cliente novo',
   descricao: 'A implantação se paga ou custa para entrar o cliente? Veja o lucro por cliente, o custo mensal e o payback.',
   campos: [
     { id: 'horas', rotulo: 'Horas de implantação por cliente', valor: 40, dica: 'Onboarding, configuração, integração e treinamento.' },
@@ -53,6 +54,12 @@ registrar({
         { nome: 'Resultado da implantação no mês', valor: brl(resultadoMes), nota: 'lucro por cliente × clientes novos' },
         ...(lucro < 0 ? [{ nome: 'Payback da implantação', valor: isFinite(payback) ? num(payback) + ' meses' : 'nunca', nota: 'prejuízo ÷ margem da mensalidade' }] : []),
         { nome: 'MRR em implantação', valor: brl(paradoMes), nota: `mensalidade × ${num(v.dias, 0)}/30 dias × novos: valor ainda não percebido pelo cliente` },
+      ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Valor cobrado contra custo, por cliente', formato: 'brl',
+          dados: [{ rotulo: 'Cobrado', valor: v.cobrado, tom: 'cheio' }, { rotulo: 'Custo da implantação', valor: custo, tom: 'hachurado' }] },
+        { tipo: 'cascata', titulo: 'Lucro da implantação por cliente', formato: 'brl',
+          passos: [{ rotulo: 'Cobrado', valor: v.cobrado, total: true }, { rotulo: 'Custo das horas', valor: -custo }, { rotulo: 'Resultado', valor: lucro, total: true }] },
       ],
       diagnostico: {
         tipo,

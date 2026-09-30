@@ -29,7 +29,6 @@ registrar({
     alavancas.sort((a, b) => b.ganho - a.ganho);
     const top = alavancas[0];
     const diaAMenos = v.ciclo > 1 ? calc(v.oportunidades, f, v.ticket, v.ciclo - 1) - vel : NaN;
-    const linhas = alavancas.map(a => `<tr><td>${a.nome}</td><td>${a.acao}</td><td>+${brl(a.ganho)}/dia</td><td>+${brl(a.ganho * 30)}/mês</td><td>+${pct(a.rel)}</td></tr>`).join('');
     const pontos = [
       `Seu processo gera ${brl(vel)} por dia: ${num(v.oportunidades, 0)} oportunidades × ${pct(f)} de fechamento × ${brl(v.ticket)} ÷ ${num(v.ciclo, 0)} dias.`,
       `Melhorar 10% em cada alavanca é a mesma régua para as quatro. Para o ciclo, 10% significa encurtar de ${num(v.ciclo, 1)} para ${num(v.ciclo * 0.9, 1)} dias, o que rende ${pct(top.nome === 'Ciclo de venda' ? top.rel : 1 / 0.9 - 1)} porque o ciclo divide a fórmula.`,
@@ -50,8 +49,14 @@ registrar({
         texto: 'Não existe faixa certa de velocidade: o número serve para comparar você com você mesmo, mês a mês, e para ver qual alavanca vale testar primeiro.',
         pontos,
       },
-      extra: `<section class="card"><h2>Efeito de melhorar cada alavanca em 10%, em ordem de impacto</h2><div class="scroll"><table>
-        <tr><th>Alavanca</th><th>Mudança</th><th>Ganho por dia</th><th>Ganho por mês</th><th>Velocidade</th></tr>${linhas}</table></div></section>`,
+      paineis: [
+        { tipo: 'barras', titulo: 'Ganho por mês ao melhorar cada alavanca em 10%', formato: 'brl',
+          dados: alavancas.map((a, i) => ({ rotulo: a.nome, valor: a.ganho * 30, tom: i === 0 ? 'cheio' : 'hachurado' })) },
+        { tipo: 'composicao', titulo: 'Velocidade por mês: base e ganho da melhor alavanca', formato: 'brl',
+          partes: [{ rotulo: 'Velocidade atual', valor: mes, tom: 'cheio' }, { rotulo: `Ganho com ${top.nome.toLowerCase()}`, valor: top.ganho * 30, tom: 'pontilhado' }] },
+        { tipo: 'tabela', titulo: 'Detalhe de cada alavanca, em ordem de impacto', colunas: ['Alavanca', 'Mudança', 'Ganho por dia', 'Ganho por mês', 'Velocidade'],
+          linhas: alavancas.map(a => [a.nome, a.acao, '+' + brl(a.ganho), '+' + brl(a.ganho * 30), { v: '+' + pct(a.rel), tom: 'pos' }]) },
+      ],
     };
   },
 });

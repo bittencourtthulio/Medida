@@ -42,6 +42,14 @@ registrar({
         { nome: 'Clique → lead', valor: pct(txLead), nota: 'conversão da página' },
         { nome: 'Lead → cliente', valor: pct(txVenda), nota: 'conversão do comercial' },
       ],
+      paineis: [
+        { tipo: 'funil', titulo: 'Do clique ao cliente', formato: 'int',
+          etapas: [{ rotulo: 'Cliques', valor: v.cliques }, { rotulo: 'Leads', valor: v.leads }, { rotulo: 'Clientes', valor: v.vendas }] },
+        { tipo: 'barras', titulo: 'CPA contra o teto sem prejuízo', formato: 'brl',
+          dados: isNaN(cpa) ? [{ rotulo: 'Teto de CPA', valor: cpaMax, tom: 'hachurado' }] : [{ rotulo: 'Seu CPA', valor: cpa, tom: 'cheio' }, { rotulo: 'Teto de CPA', valor: cpaMax, tom: 'hachurado' }] },
+        { tipo: 'composicao', titulo: 'Para onde vai a receita', formato: 'brl',
+          partes: [{ rotulo: 'Investimento em tráfego', valor: v.invest }, { rotulo: 'Custos variáveis', valor: Math.max(0, receita * (1 - m)) }, { rotulo: 'Lucro', valor: Math.max(0, lucro) }] },
+      ],
       diagnostico: {
         tipo,
         titulo: { good: 'Funil lucrativo', warn: 'Funil no limite do equilíbrio', bad: 'Funil dando prejuízo' }[tipo],

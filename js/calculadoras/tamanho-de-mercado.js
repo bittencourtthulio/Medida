@@ -43,7 +43,7 @@ registrar({
       pontos.push(`A meta de ${brl(v.meta)} exige ${num(Math.ceil(somNec), 0)} clientes, mais do que todo o SAM (${num(sam, 0)}). Nesse mercado e preço, a meta não cabe: amplie o perfil atendido ou aumente o ticket.`);
     }
     pontos.push(`Com a mensalidade atual, cada ${brl(anual)} de ARR depende de um cliente: duplicar o preço médio reduz pela metade os clientes necessários para o mesmo ARR.`);
-    const linha = (nome, n) => `<tr><td>${nome}</td><td>${num(n, 0)}</td><td>${brl(arr(n))}</td></tr>`;
+    const linha = (nome, n) => [nome, num(n, 0), brl(arr(n))];
     return {
       kpis: [
         { nome: 'TAM', valor: brl(arr(v.tam)), nota: `${num(v.tam, 0)} empresas × ${brl(anual)} por ano` },
@@ -59,7 +59,14 @@ registrar({
         texto: 'TAM é o mercado total, SAM a parte que você atende e SOM a fatia que você consegue conquistar no prazo.',
         pontos,
       },
-      extra: `<section class="card"><h3>Mercado em camadas</h3><table><thead><tr><th>Camada</th><th>Empresas</th><th>ARR</th></tr></thead><tbody>${linha('TAM', v.tam)}${linha('SAM', sam)}${linha('SOM', som)}</tbody></table></section>`,
+      paineis: [
+        { tipo: 'funil', titulo: 'Do mercado total à fatia conquistada', formato: 'int', nota: 'Empresas em cada camada.',
+          etapas: [{ rotulo: 'TAM', valor: v.tam }, { rotulo: 'SAM', valor: sam }, { rotulo: 'SOM', valor: som }] },
+        { tipo: 'barras', titulo: 'ARR por camada', formato: 'brl', nota: temMeta ? 'A marca é a meta de ARR em 3 anos.' : undefined,
+          dados: [{ rotulo: 'TAM', valor: arr(v.tam), tom: 'vazado' }, { rotulo: 'SAM', valor: arr(sam), tom: 'hachurado' }, { rotulo: 'SOM', valor: arr(som), tom: 'cheio' }],
+          meta: temMeta ? { rotulo: 'Meta de ARR', valor: v.meta } : undefined },
+        { tipo: 'tabela', titulo: 'Mercado em camadas', colunas: ['Camada', 'Empresas', 'ARR'], linhas: [linha('TAM', v.tam), linha('SAM', sam), linha('SOM', som)] },
+      ],
     };
   },
 });

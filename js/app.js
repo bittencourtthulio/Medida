@@ -58,7 +58,7 @@
   function indexar() {
     indice = CALCULADORAS.map(c => ({
       c, nomeNorm: norm(c.nome),
-      nome: conjunto(c.nome), termos: contagemTermos(TERMOS[c.id] || ''), desc: conjunto(c.descricao),
+      nome: conjunto(c.nome), termos: contagemTermos(c.termos || TERMOS[c.id] || ''), desc: conjunto(c.descricao),
       cat: conjunto(c.categoria), campos: conjunto(c.campos.map(f => f.rotulo).join(' ')),
     }));
   }
@@ -249,6 +249,7 @@
     $('diag').innerHTML = `<div class="diag ${d.tipo}"><h3>${esc(d.titulo)}</h3><p>${esc(d.texto)}</p>${d.pontos ? '<ul>' + d.pontos.map(p => `<li>${esc(p)}</li>`).join('') + '</ul>' : ''}</div>`;
     $('kpis').innerHTML = r.kpis.map((k, i) =>
       `<div class="kpi" style="--i:${i}"><div class="name">${esc(k.nome)}</div><div class="val">${esc(k.valor)}</div><div class="note">${esc(k.nota || '')} ${k.selo ? `<span class="badge ${k.selo[0]}">${esc(k.selo[1])}</span>` : ''}</div></div>`).join('');
+    $('paineis').innerHTML = renderPaineis(r.paineis);
     $('extra').innerHTML = r.extra || '';
     $('pTitulo').textContent = 'Premissas informadas';
     $('pUrl').textContent = location.host + location.pathname.replace(/app\.html$/, '');

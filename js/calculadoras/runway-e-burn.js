@@ -22,7 +22,12 @@ registrar({
     const sobra = Math.max(0, v.receita - v.custos);
 
     if (lucra) {
+      const crescimento = Array.from({ length: 13 }, (_, t) => ({ x: t, y: v.caixa + sobra * t }));
       return {
+        paineis: [
+          { tipo: 'linha', titulo: 'Caixa nos próximos 12 meses, se nada mudar', formato: 'brl', eixoX: 'meses', largo: true, series: [{ nome: 'Caixa', pontos: crescimento }] },
+          { tipo: 'barras', titulo: 'Receita contra custos, por mês', formato: 'brl', dados: [{ rotulo: 'Receita', valor: v.receita, tom: 'cheio' }, { rotulo: 'Custos', valor: v.custos, tom: 'hachurado' }] },
+        ],
         kpis: [
           { nome: 'Burn líquido mensal', valor: brl(0), nota: 'custos − receita, quando positivo', selo: ['good', 'sem queima'] },
           { nome: 'Runway', valor: 'caixa cresce', nota: `sobram ${brl(sobra)} por mês` },
@@ -68,7 +73,17 @@ registrar({
     }
     if (v.receita > 0) pontos.push(`Receita adicional de ${brl(burn)} por mês equivale a ${num((burn / v.receita) * 100)}% sobre os ${brl(v.receita)} de hoje.`);
 
+    const ate = Math.min(Math.ceil(runway), 36);
+    const pontosCaixa = [];
+    for (let t = 0; t <= ate; t++) if (t < runway) pontosCaixa.push({ x: t, y: v.caixa - burn * t });
+    if (runway <= 36) pontosCaixa.push({ x: runway, y: 0 });
     return {
+      paineis: [
+        { tipo: 'linha', titulo: runway > 36 ? 'Caixa nos próximos 36 meses, com o burn de hoje' : 'Caixa mês a mês até zerar, com o burn de hoje', formato: 'brl', eixoX: 'meses', largo: true,
+          series: [{ nome: 'Caixa', pontos: pontosCaixa }], marcas: runway <= 36 ? [{ x: runway, y: 0, rotulo: `zera em ${num(runway)} m` }] : [] },
+        { tipo: 'barras', titulo: 'Receita contra custos, por mês', formato: 'brl', dados: [{ rotulo: 'Receita', valor: v.receita, tom: 'cheio' }, { rotulo: 'Custos', valor: v.custos, tom: 'hachurado' }],
+          nota: `A diferença de ${brl(burn)} por mês é o burn.` },
+      ],
       kpis: [
         { nome: 'Burn líquido mensal', valor: brl(burn), nota: 'custos − receita, quando positivo' },
         { nome: 'Runway', valor: fmt.meses(runway), nota: 'caixa ÷ burn líquido', selo: tipo === 'good' ? ['good', 'na regra de bolso (12+ meses)'] : tipo === 'warn' ? ['warn', 'abaixo de 12 meses'] : ['bad', 'abaixo de 6 meses'] },

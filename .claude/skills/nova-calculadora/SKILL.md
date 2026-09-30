@@ -34,7 +34,7 @@ registrar({
     return {
       kpis: [{ nome, valor: 'string formatada', nota: 'como se calcula', selo: ['good'|'warn'|'bad', 'texto'] }],
       diagnostico: { tipo: 'good'|'warn'|'bad', titulo, texto, pontos: ['leitura acionável', ...] },
-      extra: '<section class="card">…</section>', // opcional: gráfico SVG, tabela
+      paineis: [{ tipo: 'barras|composicao|funil|linha|cascata|tabela', titulo, ... }], // dashboard (campos em js/graficos.js)
     };
   },
 });
@@ -42,6 +42,8 @@ registrar({
 
 ## Regras
 
+- **Dashboard obrigatório:** devolva `paineis` com 2 ou 3 painéis que mostrem a estrutura real do resultado (comparar → barras; para onde vai → composicao; conversão → funil; evolução → linha; fluxo → cascata; detalhe → tabela). Números só das entradas. O validador reprova calculadora sem painel. Referências: `roi-saas.js`, `churn.js`, `funil-trafego.js`.
+- Coloque `termos: '...'` dentro do `registrar({...})` (palavras e perguntas que levam à calculadora), em vez de editar `js/termos.js`.
 - Envolva o arquivo inteiro em `(() => { ... })();` para que funções auxiliares (gráficos, tabelas) não colidam com as de outras calculadoras: todos os arquivos compartilham o escopo global.
 - Cada área deve ter pelo menos 5 calculadoras.
 - Nunca invente benchmark ou fonte: limiar só se for matemática pura ou regra de bolso atribuível, dita como tal no texto. Preços de terceiros (IA, nuvem) sempre vêm de campo preenchido pelo usuário.
@@ -50,5 +52,5 @@ registrar({
 - Semáforo: `good` saudável, `warn` atenção/no limite, `bad` destrói valor ou prejuízo.
 - Sem estado: nada de `localStorage`, rede ou banco. Tudo é função pura de `v`.
 - Textos em português do Brasil, campos com padrão realista (a tela já abre com diagnóstico).
-- Conteúdo de `extra` entra como HTML: só use dados numéricos formatados por `fmt`, nunca texto digitado pelo usuário.
+- Os `paineis` são dados, não HTML: o app escapa e desenha. Não use o campo legado `extra`.
 - O PDF é gerado pela impressão da página: use `.card`, `.kpi`, `.diag` (já tratados) e evite elementos com altura fixa ou scroll que escondam conteúdo.

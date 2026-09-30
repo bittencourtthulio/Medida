@@ -39,6 +39,12 @@ registrar({
         { nome: 'MRR perdido', valor: brl(mrrPerdido), nota: 'por mês, só com cancelamentos' },
         { nome: 'Crescimento líquido', valor: (liquido >= 0 ? '+' : '') + num(liquido, 0), nota: `base final: ${num(fim, 0)} clientes` },
       ],
+      paineis: [
+        { tipo: 'cascata', titulo: 'Da base inicial à final, em clientes', formato: 'int',
+          passos: [{ rotulo: 'Início', valor: v.inicio, total: true }, { rotulo: 'Perdidos', valor: -v.perdidos }, { rotulo: 'Novos', valor: v.novos }, { rotulo: 'Final', valor: fim, total: true }] },
+        { tipo: 'barras', titulo: 'MRR que entra contra MRR que sai, por mês', formato: 'brl',
+          dados: [{ rotulo: 'Novo MRR', valor: mrrNovo, tom: 'cheio' }, { rotulo: 'MRR perdido', valor: mrrPerdido, tom: 'vazado' }] },
+      ],
       diagnostico: {
         tipo,
         titulo: { good: 'Retenção forte', warn: 'Churn em zona de atenção', bad: 'Churn alto: a base está vazando' }[tipo],

@@ -50,6 +50,15 @@ registrar({
     else pontos.push(`O cruzamento só acontece no mês ${num(cruzMes, 0)}, depois do seu horizonte de ${H} meses: dentro do prazo analisado, comprar é mais barato.`);
     pontos.push(`Custo de oportunidade: as ${num(v.horas, 0)} horas de construção saem do que o time faria no lugar, como produto, clientes ou outros projetos. Se essas horas teriam gerado mais que a diferença de ${brl(Math.abs(dif))}, comprar vale mais mesmo quando construir é mais barato.`);
     pontos.push('O cruzamento assume licença constante. Se o fornecedor reajustar o preço, o cálculo muda a favor de construir; esta conta ignora essa variação, bem como atrasos e estouros na construção.');
+    const sC = [], sK = [];
+    for (let t = 0; t <= H; t++) { sC.push({ x: t, y: inicial + v.manut * t }); sK.push({ x: t, y: v.integracao + v.licenca * t }); }
+    const paineis = [
+      { tipo: 'linha', titulo: 'Custo acumulado: construir contra comprar', formato: 'brl', eixoX: 'meses', largo: true,
+        series: [{ nome: 'Construir', pontos: sC }, { nome: 'Comprar', pontos: sK }],
+        marcas: (cruzTexto === null && isFinite(cruz) && cruz > 0 && cruz <= H) ? [{ x: cruz, y: inicial + v.manut * cruz, rotulo: `cruzam no mês ${num(cruzMes, 0)}` }] : [] },
+      { tipo: 'barras', titulo: `Custo total em ${H} meses`, formato: 'brl',
+        dados: [{ rotulo: 'Construir', valor: construir, tom: 'cheio' }, { rotulo: 'Comprar', valor: comprar, tom: 'hachurado' }] },
+    ];
     return {
       kpis: [
         { nome: 'Custo total de construir', valor: brl(construir), nota: `${num(v.horas, 0)} h × ${brl(v.horaCusto)} + manutenção de ${H} meses` },
@@ -65,6 +74,7 @@ registrar({
           : `Em ${meses(H)}, comprar custa ${brl(comprar)} contra ${brl(construir)} de construir. Comprar também libera o time para o que diferencia o seu produto, e o cálculo assume licença constante.`,
         pontos,
       },
+      paineis,
     };
   },
 });

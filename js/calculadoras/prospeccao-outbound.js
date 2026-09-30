@@ -69,7 +69,15 @@ registrar({
     }
     if (r.clientes > 0 && r.clientes < 1) pontos.push(`Em média o SDR fecha menos de 1 cliente por mês (${num(r.clientes, 2)}): o resultado varia muito de um mês para outro. Avalie o custo em janelas de 3 meses.`);
 
+    const paineis = [
+      { tipo: 'funil', titulo: 'Do contato ao cliente, por mês', formato: 'num',
+        etapas: [{ rotulo: 'Contatos', valor: v.contatos }, { rotulo: 'Respostas', valor: r.respostas }, { rotulo: 'Reuniões agendadas', valor: r.agendadas }, ...(informouCompar ? [{ rotulo: 'Reuniões realizadas', valor: r.realizadas }] : []), { rotulo: 'Clientes', valor: r.clientes }] },
+    ];
+    if (r.clientes > 0) paineis.push({ tipo: 'barras', titulo: 'Custo de cada resultado da prospecção', formato: 'brl',
+      nota: 'O custo mensal do SDR dividido pelo que ele produziu em cada etapa.',
+      dados: [{ rotulo: 'Por resposta', valor: v.custo / r.respostas, tom: 'pontilhado' }, { rotulo: 'Por reunião agendada', valor: v.custo / r.agendadas, tom: 'hachurado' }, ...(informouCompar ? [{ rotulo: 'Por reunião realizada', valor: cpReuniao, tom: 'hachurado' }] : []), { rotulo: 'Por cliente (CAC)', valor: cac, tom: 'cheio' }] });
     return {
+      paineis,
       kpis: [
         { nome: 'Custo por reunião realizada', valor: brl(cpReuniao), nota: `${brl(v.custo)} ÷ ${num(r.realizadas, 1)} reuniões`, selo: undefined },
         { nome: 'CAC outbound', valor: brl(cac), nota: `${brl(v.custo)} ÷ ${num(r.clientes, 1)} clientes`, selo: tipo === 'good' ? ['good', 'payback confortável'] : tipo === 'warn' ? ['warn', 'atenção'] : ['bad', 'crítico'] },

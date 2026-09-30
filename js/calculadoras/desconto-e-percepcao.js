@@ -46,6 +46,12 @@ registrar({
         { nome: 'Preço médio realizado', valor: brl(realizado), nota: `${pct(1 - realizado / v.tabela)} abaixo da tabela` },
         ...(temChurn ? [{ nome: 'Churn: desconto vs cheio', valor: `${num(v.churnCom)}% vs ${num(v.churnSem)}%`, nota: 'mensal, informado por você' }] : []),
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Preço de tabela contra o realizado, por mês', formato: 'brl',
+          dados: [{ rotulo: 'Tabela', valor: v.tabela, tom: 'cheio' }, { rotulo: 'Médio realizado', valor: realizado, tom: 'hachurado' }, { rotulo: 'Com desconto', valor: realizadoDesc, tom: 'vazado' }] },
+        { tipo: 'cascata', titulo: 'MRR novo do mês: da tabela ao realizado', formato: 'brl',
+          passos: [{ rotulo: 'A preço de tabela', valor: v.contratos * v.tabela, total: true }, { rotulo: 'Desconto', valor: -cedidoMes }, { rotulo: 'Realizado', valor: v.contratos * realizado, total: true }] },
+      ],
       diagnostico: {
         tipo, titulo,
         texto: 'Regra de bolso, não meta: desconto em mais da metade dos contratos, com média de 15% ou mais, é sinal de que o preço de tabela não é defendido pela percepção de valor. O desconto ocasional faz parte da venda.',

@@ -47,6 +47,12 @@ registrar({
         { nome: 'Razão vs o mais lembrado', valor: isFinite(razao) ? num(razao, 2) + 'x' : '—', nota: 'suas citações ÷ citações do líder' },
         ...(v.nenhuma > 0 ? [{ nome: 'Sem marca na cabeça', valor: pct(nenhuma / v.pessoas), nota: 'não citaram ninguém da categoria' }] : []),
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Você contra o mais lembrado', formato: 'pct',
+          dados: [{ rotulo: 'Você', valor: share, tom: 'cheio' }, { rotulo: 'Mais lembrado', valor: shareLider, tom: 'hachurado' }] },
+        { tipo: 'funil', titulo: 'De quem respondeu a quem lembra de você', formato: 'int',
+          etapas: [{ rotulo: 'Pessoas perguntadas', valor: v.pessoas }, { rotulo: 'Citaram alguma marca da categoria', valor: Math.max(v.pessoas - nenhuma, minha) }, { rotulo: 'Citaram a sua', valor: minha }] },
+      ],
       diagnostico: { tipo, titulo, texto, pontos },
     };
   },

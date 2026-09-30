@@ -34,7 +34,13 @@ registrar({
     if (g <= 0 && m > 0) pontos.push('A margem positiva está segurando a soma, mas sem crescimento a receita só diminui de valor com o tempo. Priorize o que destrava novas vendas.');
     if (g < 0) pontos.push(`Com a receita encolhendo ${num(-g)}%, atacar churn costuma ser o caminho mais curto para voltar a crescer.`);
 
+    const paineis = [
+      { tipo: 'barras', titulo: 'Crescimento, margem e a soma contra a linha de 40', formato: 'num', nota: 'Valores em pontos percentuais; valores negativos aparecem com sinal.',
+        dados: [{ rotulo: 'Crescimento', valor: g, tom: 'hachurado' }, { rotulo: 'Margem', valor: m, tom: 'pontilhado' }, { rotulo: 'Soma', valor: soma, tom: 'cheio' }],
+        meta: { rotulo: 'Linha de 40 pontos', valor: 40 } },
+    ];
     return {
+      paineis,
       kpis: [
         { nome: 'Regra dos 40%', valor: num(soma) + ' pontos', nota: 'crescimento + margem', selo: ok ? ['good', 'fecha 40'] : soma > 0 ? ['warn', 'abaixo de 40'] : ['bad', 'soma zero ou negativa'] },
         { nome: ok ? 'Folga sobre 40' : 'Distância para 40', valor: num(Math.abs(dist)) + ' pontos', nota: ok ? 'quanto passou da linha' : 'quanto falta na soma' },

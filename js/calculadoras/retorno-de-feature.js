@@ -59,6 +59,12 @@ registrar({
         { nome: 'Retorno em 12 meses', valor: brl(retorno12), nota: '12 × ganho líquido − custo de construir' },
         { nome: 'Ganho mínimo por cliente', valor: isFinite(minimo) ? (minimo <= 0 ? 'R$ 0' : brl(minimo, 2)) : '—', nota: 'por mês, para pagar em 12 meses' },
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Custo contra retorno em 12 meses', formato: 'brl',
+          dados: [{ rotulo: 'Custo de construir', valor: custo, tom: 'vazado' }, { rotulo: 'Manutenção em 12 meses', valor: v.manut * 12, tom: 'pontilhado' }, { rotulo: 'Ganho bruto em 12 meses', valor: bruto * 12, tom: 'cheio' }] },
+        { tipo: 'composicao', titulo: 'De onde vem o ganho mensal', formato: 'brl',
+          partes: [{ rotulo: 'Receita adicional', valor: adicional, tom: 'cheio' }, { rotulo: 'Churn evitado', valor: preservada, tom: 'hachurado' }] },
+      ],
       diagnostico: {
         tipo,
         titulo: liquido <= 0 ? 'A funcionalidade não cobre o próprio custo' : tipo === 'good' ? 'A funcionalidade se paga em até 12 meses' : tipo === 'warn' ? 'Se paga, mas devagar' : 'Retorno distante demais',

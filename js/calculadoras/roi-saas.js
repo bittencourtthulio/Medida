@@ -104,38 +104,19 @@ registrar({
       diagnostico = { tipo, titulo: titulos[tipo], texto: textos[tipo], pontos };
     }
 
-    return { kpis, diagnostico, extra: grafico(acum0, linhas, H, breakEven) + tabela(linhas, H) };
+    const paineis = [
+      { tipo: 'linha', titulo: 'Lucro acumulado da coorte, líquido do investimento', formato: 'brl', eixoX: 'meses', largo: true,
+        series: [{ nome: 'Lucro acumulado', pontos: [{ x: 0, y: acum0 }, ...linhas.slice(0, H).map(l => ({ x: l.t, y: l.acum }))] }],
+        marcas: (!isNaN(breakEven) && breakEven > 0 && breakEven <= H) ? [{ x: breakEven, y: 0, rotulo: `retorno em ${num(breakEven)} m` }] : [] },
+    ];
+    if (isFinite(ltv) && isFinite(cac)) {
+      paineis.push({ tipo: 'barras', titulo: 'CAC contra o valor que o cliente devolve', formato: 'brl',
+        dados: [{ rotulo: 'CAC', valor: cac, tom: 'cheio' }, { rotulo: 'LTV (margem)', valor: ltv, tom: 'hachurado' }],
+        meta: isFinite(cacMax) ? { rotulo: 'CAC máximo para LTV/CAC 3x (regra de bolso)', valor: cacMax } : undefined });
+    }
+    paineis.push({ tipo: 'tabela', titulo: 'Mês a mês', colunas: ['Mês', 'Clientes ativos', 'MRR', 'Margem', 'Acumulado'],
+      linhas: linhas.slice(0, H).map(l => [String(l.t), num(l.ativos), brl(l.mrr), brl(l.contrib), { v: brl(l.acum), tom: l.acum >= 0 ? 'pos' : 'neg' }]) });
+    return { kpis, diagnostico, paineis };
   },
 });
-
-function grafico(acum0, linhas, H, breakEven) {
-  const { brl, num } = fmt;
-  const W = 640, Hh = 240, m = { l: 64, r: 12, t: 12, b: 28 };
-  const pts = [{ t: 0, acum: acum0 }, ...linhas.slice(0, H)];
-  const ys = pts.map(p => p.acum);
-  let min = Math.min(...ys, 0), max = Math.max(...ys, 0);
-  if (min === max) max = min + 1;
-  const x = t => m.l + (t / H) * (W - m.l - m.r);
-  const y = v => m.t + (1 - (v - min) / (max - min)) * (Hh - m.t - m.b);
-  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.acum).toFixed(1)}`).join(' ');
-  const ticks = [min, min + (max - min) / 2, max].map(v =>
-    `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mute)">${brl(v)}</text>`).join('');
-  const passo = Math.max(1, Math.ceil(H / 12));
-  const xl = pts.filter(p => p.t % passo === 0).map(p =>
-    `<text x="${x(p.t)}" y="${Hh - 8}" text-anchor="middle" font-size="11" fill="var(--mute)">${p.t}</text>`).join('');
-  const be = (!isNaN(breakEven) && breakEven <= H)
-    ? `<circle cx="${x(breakEven)}" cy="${y(0)}" r="5" fill="var(--ink)"/><text x="${x(breakEven)}" y="${y(0) - 10}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">break-even ${num(breakEven)}m</text>` : '';
-  return `<section class="card"><h2>Lucro acumulado da coorte (líquido do investimento)</h2>
-    <svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Lucro acumulado por mês">${ticks}
-    <line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mute)" stroke-dasharray="4 3"/>
-    <path d="${path}" fill="none" stroke="var(--ink)" stroke-width="3"/>${be}${xl}</svg></section>`;
-}
-
-function tabela(linhas, H) {
-  const { brl, num } = fmt;
-  const corpo = linhas.slice(0, H).map(l =>
-    `<tr><td>${l.t}</td><td>${num(l.ativos)}</td><td>${brl(l.mrr)}</td><td>${brl(l.contrib)}</td><td class="${l.acum >= 0 ? 'pos' : 'neg'}">${brl(l.acum)}</td></tr>`).join('');
-  return `<section class="card"><h2>Mês a mês</h2><div class="scroll"><table>
-    <tr><th>Mês</th><th>Clientes ativos</th><th>MRR</th><th>Margem</th><th>Acumulado</th></tr>${corpo}</table></div></section>`;
-}
 })();

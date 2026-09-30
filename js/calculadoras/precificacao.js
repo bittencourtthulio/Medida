@@ -38,6 +38,12 @@ registrar({
           { nome: 'Margem na mensalidade atual', valor: pct(margemAtual), nota: `lucro de ${brl(lucroAtual, 2)} por cliente ao mês`, selo: tipo === 'good' ? ['good', 'na meta'] : tipo === 'warn' ? ['warn', 'abaixo da meta'] : ['bad', 'prejuízo'] },
         ] : []),
       ],
+      paineis: [
+        { tipo: 'composicao', titulo: 'Para onde vai a mensalidade mínima', formato: 'brl2',
+          partes: [{ rotulo: 'Custo por cliente', valor: v.custo, tom: 'cheio' }, { rotulo: 'Impostos e taxas', valor: sugerido * imp, tom: 'hachurado' }, { rotulo: 'Lucro', valor: sugerido * alvo, tom: 'pontilhado' }] },
+        { tipo: 'barras', titulo: temAtual ? 'Mensalidade atual contra a mínima' : 'Mensalidade mínima contra o custo', formato: 'brl2',
+          dados: [{ rotulo: 'Mínima', valor: sugerido, tom: 'cheio' }, ...(temAtual ? [{ rotulo: 'Atual', valor: v.atual, tom: v.atual >= sugerido ? 'hachurado' : 'vazado' }] : []), { rotulo: 'Custo', valor: v.custo, tom: 'cinza' }] },
+      ],
       diagnostico: {
         tipo,
         titulo: { good: 'Preço na meta', warn: temAtual ? 'Preço abaixo da margem desejada' : 'Mensalidade mínima calculada', bad: 'A mensalidade atual dá prejuízo' }[tipo],

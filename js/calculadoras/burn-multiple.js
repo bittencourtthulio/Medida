@@ -18,10 +18,15 @@ registrar({
     const dMrr = v.mrrFim - v.mrrIni;
     const arrNovo = dMrr * 12;
     const burnMes = v.meses > 0 ? v.burn / v.meses : NaN;
+    const cascataMrr = { tipo: 'cascata', titulo: 'Do MRR inicial ao final do período', formato: 'brl',
+      passos: [{ rotulo: 'MRR início', valor: v.mrrIni, total: true }, { rotulo: 'Variação', valor: dMrr }, { rotulo: 'MRR fim', valor: v.mrrFim, total: true }] };
+    const barrasBurn = { tipo: 'barras', titulo: 'Burn contra ARR novo líquido', formato: 'brl', nota: 'ARR novo líquido = variação do MRR × 12, já descontado o churn.',
+      dados: [{ rotulo: 'Burn do período', valor: v.burn, tom: 'vazado' }, { rotulo: 'ARR novo líquido', valor: Math.max(0, arrNovo), tom: 'cheio' }], meta: { rotulo: 'Linha de 1x (ARR novo = burn)', valor: v.burn } };
 
     if (arrNovo <= 0) {
       const semBurn = !(v.burn > 0);
       return {
+        paineis: [barrasBurn, cascataMrr],
         kpis: [
           { nome: 'Novo ARR líquido', valor: brl(arrNovo), nota: `(${brl(v.mrrFim)} − ${brl(v.mrrIni)}) × 12` },
           { nome: 'Burn multiple', valor: '—', nota: 'sem ARR líquido novo, não há divisão com sentido', selo: semBurn ? ['warn', 'sem crescimento'] : ['bad', 'queima sem crescer'] },
@@ -44,6 +49,7 @@ registrar({
 
     if (!(v.burn > 0)) {
       return {
+        paineis: [cascataMrr],
         kpis: [
           { nome: 'Novo ARR líquido', valor: brl(arrNovo), nota: `(${brl(v.mrrFim)} − ${brl(v.mrrIni)}) × 12` },
           { nome: 'Burn multiple', valor: num(0, 2) + 'x', nota: 'burn líquido ÷ novo ARR líquido', selo: ['good', 'cresceu sem queimar'] },
@@ -75,6 +81,7 @@ registrar({
     if (isFinite(burnMes)) pontos.push(`Isso dá ${brl(burnMes)} de burn por mês e ${brl(dMrr / v.meses)} de MRR novo líquido por mês, em ${num(v.meses, 1)} meses.`);
 
     return {
+      paineis: [barrasBurn, cascataMrr],
       kpis: [
         { nome: 'Novo ARR líquido', valor: brl(arrNovo), nota: `(${brl(v.mrrFim)} − ${brl(v.mrrIni)}) × 12` },
         { nome: 'Burn multiple', valor: num(mult, 2) + 'x', nota: 'burn líquido ÷ novo ARR líquido: quanto menor, mais eficiente', selo: mult <= 1 ? ['good', 'ARR novo cobre o burn'] : ['warn', 'queima mais do que cria de ARR'] },

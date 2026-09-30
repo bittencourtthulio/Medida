@@ -44,6 +44,12 @@ registrar({
         { nome: 'MRR que entra', valor: brl(ganho), nota: 'novos + expansão' },
         { nome: 'MRR que sai', valor: brl(perda), nota: 'churn + contração' },
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'O que entra e o que sai de MRR', formato: 'brl',
+          dados: [{ rotulo: 'Clientes novos', valor: v.novo, tom: 'cheio' }, { rotulo: 'Expansão', valor: v.expansao, tom: 'hachurado' }, { rotulo: 'Churn', valor: v.churn, tom: 'vazado' }, { rotulo: 'Contração', valor: v.contracao, tom: 'pontilhado' }] },
+        { tipo: 'cascata', titulo: 'Do ganho ao MRR líquido do período', formato: 'brl',
+          passos: [{ rotulo: 'Novos', valor: v.novo }, { rotulo: 'Expansão', valor: v.expansao }, { rotulo: 'Churn', valor: -v.churn }, { rotulo: 'Contração', valor: -v.contracao }, { rotulo: 'Líquido', valor: liquido, total: true }] },
+      ],
       diagnostico: {
         tipo,
         titulo: semPerda ? 'Sem perdas no período' : qr > 1 ? 'Você ganha mais do que perde' : qr === 1 ? 'Entra e sai na mesma medida' : 'Você perde mais do que ganha: o MRR encolhe',

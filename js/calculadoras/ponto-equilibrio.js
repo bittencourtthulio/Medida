@@ -33,7 +33,17 @@ registrar({
         : `Sua base está ${pct(seguranca)} acima do equilíbrio: pode perder clientes até esse ponto antes de dar prejuízo.`);
     }
     if (v.meta > 0) pontos.push(`Para lucrar ${brl(v.meta)} por mês, são ${num(Math.ceil(peMeta), 0)} clientes.`);
+    const N = Math.max(2, Math.ceil(Math.max(pe * 1.6, v.vendas * 1.2, peMeta * 1.1)));
+    const pontosLinha = f => Array.from({ length: 7 }, (_, i) => { const x = Math.round(N * i / 6); return { x, y: f(x) }; });
+    const paineis = [
+      { tipo: 'linha', titulo: 'Receita contra custo total, por número de clientes', formato: 'brl', eixoX: 'clientes pagantes', largo: true,
+        series: [{ nome: 'Receita', pontos: pontosLinha(x => x * v.preco) }, { nome: 'Custo total (fixos + variáveis)', pontos: pontosLinha(x => v.fixos + x * v.variavel) }],
+        marcas: [{ x: pe, y: pe * v.preco, rotulo: `equilíbrio: ${num(Math.ceil(pe), 0)} clientes` }] },
+      { tipo: 'composicao', titulo: 'Para onde vai cada mensalidade', formato: 'brl',
+        partes: [{ rotulo: 'Custo variável', valor: v.variavel, tom: 'hachurado' }, { rotulo: 'Margem de contribuição (paga os fixos e o lucro)', valor: mc, tom: 'cheio' }] },
+    ];
     return {
+      paineis,
       kpis: [
         { nome: 'Ponto de equilíbrio', valor: num(Math.ceil(pe), 0) + ' clientes', nota: `${brl(peMrr)} de MRR` },
         { nome: 'Margem de contribuição', valor: brl(mc), nota: `${pct(mcPct)} da mensalidade, por cliente` },

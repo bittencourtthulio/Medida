@@ -40,20 +40,20 @@ A `apiKey` do Firebase é pública por desenho; quem protege é a lista de domí
 
 Peça ao Claude Code ("cria uma calculadora de X"): a skill `nova-calculadora` segue o contrato, registra em `js/manifest.js` e valida. Manualmente: crie `js/calculadoras/<id>.js`, adicione `'<id>'` ao manifesto e rode `node scripts/validar.mjs`. O contrato completo está em `.claude/skills/nova-calculadora/SKILL.md`.
 
-## Calculadoras incluídas (40, em 8 áreas do DNA EXPX)
+## Calculadoras incluídas (70, em 8 áreas do DNA EXPX)
 
 | Área | Calculadoras |
 |---|---|
-| Posicionamento | Prêmio de preço sobre o mercado · Concentração de receita por nicho · Teste das cinco marcas · Desconto e percepção de valor · Múltiplo de valor para o cliente |
-| Aquisição | ROI de aquisição SaaS · Funil de tráfego pago · CAC por canal · Cobertura de pipeline · Custo da prospecção outbound |
-| Conversão | Preço do plano e margem · Velocidade de vendas · Meta de vendas e leads necessários · Impacto do desconto no volume · Forecast ponderado |
-| Entrega e Operação | Margem por projeto · Retrabalho e escopo aberto · Utilização do time · Capacidade de entrega · Custo de implantação |
-| Finanças | Ponto de equilíbrio · Runway e burn · Regra dos 40% · Burn multiple · Projeção de MRR |
-| Retenção e Expansão | Churn e retenção · NRR e GRR · SaaS Quick Ratio · NPS e saúde da base · Renovação de contratos |
-| Produtos e Inovação | Serviço vs produto · Investimento em produto novo · Retorno de funcionalidade · Priorização RICE · Tamanho de mercado (TAM/SAM/SOM) |
-| Tecnologia e IA | Infraestrutura por cliente · Custo de IA por cliente · ROI de automação e agentes · Custo da dívida técnica · Construir ou comprar |
+| Posicionamento (7) | Concentração de receita por nicho · Desconto e percepção de valor · Múltiplo de valor para o cliente · Prêmio de preço sobre o mercado · Teste das cinco marcas · Subir o preço compensa? · Contra quem você perde? |
+| Aquisição (12) | CAC por canal · Custo por lead qualificado · Dependência de uma origem de clientes · Funil de tráfego pago · Magic number · Parcerias e afiliados · Payback do CAC por cliente · Cobertura de pipeline · Custo da prospecção outbound · ROI de conteúdo · ROI de aquisição SaaS · Teste A/B de conversão |
+| Conversão (9) | Capacidade comercial: quantos vendedores · Custo do time comercial e comissão · Forecast ponderado do pipeline · Impacto do desconto no volume · Meta de vendas e leads necessários · Mix de planos: qual plano sustenta a receita · Motivos de perda de negócios · Preço do plano e margem · Velocidade de vendas |
+| Entrega e Operação (8) | Capacidade de entrega · Custo de implantação · Custo do atraso · Lead time e trabalho em andamento · Margem por projeto · Previsibilidade de entrega · Retrabalho e escopo aberto · Utilização do time |
+| Finanças (11) | Burn multiple · DSO e inadimplência · Financiar crescimento com caixa · Margem bruta do SaaS · Plano anual contra mensal · Ponto de equilíbrio · Projeção de MRR · Receita por funcionário · Regra dos 40% · Runway e burn · Valuation por múltiplo de ARR |
+| Retenção e Expansão (10) | Churn e retenção · Concentração de clientes · Custo do suporte por cliente · Expansão por upsell · Saúde da base · NPS e saúde da base · NRR e GRR · SaaS Quick Ratio · Renovação de contratos · Retenção por coorte |
+| Produtos e Inovação (6) | Adoção de funcionalidade e churn · Investimento em produto novo · Priorização RICE · Retorno de funcionalidade · Serviço vs produto · Tamanho de mercado (TAM, SAM, SOM) |
+| Tecnologia e IA (7) | Construir ou comprar tecnologia · Custo de IA por cliente · IA no atendimento se paga? · Custo da dívida técnica · Infraestrutura por cliente · ROI de automação e agentes de IA · Custo da indisponibilidade |
 
-Nenhuma usa benchmark inventado: limiares são matemática ou "regra de bolso" dita como tal no veredito. Preços de IA e nuvem vêm sempre de campos preenchidos pelo usuário.
+Cada uma devolve um veredito, indicadores e um dashboard (gráficos e tabelas). Nenhuma usa benchmark inventado: limiares são matemática ou "regra de bolso" dita como tal no veredito. Preços de IA e nuvem vêm sempre de campos preenchidos pelo usuário.
 
 ## PDF
 

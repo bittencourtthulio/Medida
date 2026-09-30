@@ -47,6 +47,12 @@ registrar({
         { nome: 'Receita perdida', valor: brl(perdidaR), nota: `${num(perdidos, 0)} contratos não renovados` },
         { nome: 'Efeito líquido de preço', valor: s(efeito), nota: 'reajustes − descontos' },
       ],
+      paineis: [
+        { tipo: 'funil', titulo: 'Dos contratos que vencem aos que renovam com aumento', formato: 'int',
+          etapas: [{ rotulo: 'Vencem', valor: v.vencem }, { rotulo: 'Renovam', valor: renovados }, { rotulo: 'Com aumento', valor: v.aumento }] },
+        { tipo: 'barras', titulo: 'Receita que vencia, renovada e perdida', formato: 'brl',
+          dados: [{ rotulo: 'Vencia', valor: vencia, tom: 'cheio' }, { rotulo: 'Renovada', valor: renovadaR, tom: 'hachurado' }, { rotulo: 'Perdida', valor: perdidaR, tom: 'vazado' }] },
+      ],
       diagnostico: {
         tipo,
         titulo: taxaValor >= 1 ? 'Você renova mais receita do que vencia' : perdidos > 0 ? 'A renovação perde receita' : 'Todos renovam, mas os descontos reduzem a receita',

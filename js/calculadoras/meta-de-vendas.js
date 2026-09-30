@@ -62,6 +62,13 @@ registrar({
         ...(isFinite(mrr) ? [{ nome: 'MRR novo da meta', valor: brl(mrr), nota: `${num(alvoClientes, 0)} clientes × ${brl(v.ticket)}` }] : []),
         ...(temAtual ? [{ nome: 'Cobertura de leads', valor: pct(cobertura, 0), nota: `${num(v.leadsAtuais, 0)} gerados ÷ ${num(leads, 0)} necessários`, selo: tipo === 'good' ? ['good', 'meta cabe'] : tipo === 'warn' ? ['warn', 'falta volume'] : ['bad', 'menos da metade'] }] : []),
       ],
+      paineis: [
+        { tipo: 'funil', titulo: 'Funil reverso: o que a meta exige em cada etapa', formato: 'int',
+          etapas: [{ rotulo: 'Leads', valor: leads }, { rotulo: 'Reuniões', valor: reunioes }, { rotulo: 'Propostas', valor: propostas }, { rotulo: 'Clientes', valor: alvoClientes }] },
+        ...(temAtual ? [{ tipo: 'barras', titulo: 'Leads gerados contra leads necessários', formato: 'int',
+          dados: [{ rotulo: 'Gerados', valor: v.leadsAtuais, tom: 'hachurado' }, { rotulo: 'Necessários', valor: leads, tom: 'cheio' }] }] : [{ tipo: 'barras', titulo: 'Conversão de cada etapa', formato: 'pct',
+          dados: etapas.map(e => ({ rotulo: e.nome, valor: e.taxa, tom: e === pior ? 'vazado' : 'hachurado' })) }]),
+      ],
       diagnostico: {
         tipo,
         titulo: { good: 'O volume de leads cobre a meta', warn: temAtual ? 'Faltam leads para a meta' : 'Funil reverso calculado', bad: 'O volume atual está longe da meta' }[tipo],

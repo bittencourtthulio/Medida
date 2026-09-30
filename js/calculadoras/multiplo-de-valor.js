@@ -38,6 +38,12 @@ registrar({
         { nome: 'Preço que deixa o cliente com 3x', valor: brl(alvo), nota: 'valor gerado ÷ 3 (regra de bolso)' },
         { nome: 'Folga vs mensalidade atual', valor: (folga > 0 ? '+' : '') + brl(folga), nota: folga > 0 ? 'espaço teórico para subir' : 'acima do que a regra sugere' },
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Valor gerado contra a mensalidade, por mês', formato: 'brl',
+          dados: [{ rotulo: 'Valor gerado', valor: valor, tom: 'cheio' }, { rotulo: 'Mensalidade', valor: v.preco, tom: 'hachurado' }], meta: { rotulo: 'Mensalidade que deixa o cliente com 3x', valor: alvo } },
+        { tipo: 'composicao', titulo: 'Quem fica com o valor gerado', formato: 'brl',
+          partes: [{ rotulo: 'Parte sua (mensalidade)', valor: Math.min(v.preco, valor), tom: 'cheio' }, { rotulo: 'Parte do cliente', valor: Math.max(valor - v.preco, 0), tom: 'hachurado' }] },
+      ],
       diagnostico: {
         tipo, titulo,
         texto: 'Regra de bolso, não lei: o cliente tende a comprar com facilidade quando ganha cerca de 3 vezes o que paga. Abaixo de 1x ele perde dinheiro com você. O número depende de o valor gerado ser real e reconhecido por ele.',

@@ -40,6 +40,12 @@ registrar({
         { nome: 'Segmentos para 80% do MRR', valor: num(para80, 0), nota: `de ${num(n, 0)} com receita` },
         { nome: 'MRR total', valor: brl(total), nota: 'soma dos segmentos informados' },
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'MRR por segmento', formato: 'brl',
+          dados: valores.map((x, i) => ({ rotulo: 'Segmento ' + (i + 1), valor: x, tom: i === 0 ? 'cheio' : 'hachurado' })) },
+        { tipo: 'composicao', titulo: 'Como o MRR se divide entre segmentos', formato: 'brl',
+          partes: valores.map((x, i) => ({ rotulo: 'Segmento ' + (i + 1), valor: x })) },
+      ],
       diagnostico: {
         tipo, titulo,
         texto: 'Convenção do índice HHI: abaixo de 1.500 é pulverizado, de 1.500 a 2.500 é moderado, acima de 2.500 é concentrado. Foco não é sempre melhor que dispersão: o índice é um sinal para você avaliar se a concentração é escolha ou acaso.',

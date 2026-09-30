@@ -3,6 +3,7 @@ registrar({
   id: 'margem-por-projeto',
   nome: 'Margem por projeto',
   categoria: 'Entrega e Operação',
+  termos: 'margem projeto lucro projeto deu lucro estouro de horas horas orçadas orçamento software house margem real hora vendida prejuízo projeto fechado escopo fechado',
   descricao: 'Esse projeto deu lucro de verdade? Compare a margem que você orçou com a que sobrou depois das horas reais.',
   campos: [
     { id: 'valor', rotulo: 'Valor do projeto', prefixo: 'R$', valor: 80000, dica: 'O que foi cobrado do cliente, sem impostos se você os separa.' },
@@ -64,6 +65,12 @@ registrar({
         ] : []),
         { nome: 'Valor efetivo da hora', valor: brl(horaEfetiva), nota: temOrc ? `vendida a ${brl(horaVendida)} na proposta` : 'valor ÷ horas reais' },
         { nome: 'Custo da hora', valor: brl(custoHoraTotal), nota: 'custo real total ÷ horas reais, com outros custos' },
+      ],
+      paineis: [
+        { tipo: 'cascata', titulo: 'Do valor do projeto ao lucro', formato: 'brl',
+          passos: [{ rotulo: 'Valor', valor: v.valor, total: true }, { rotulo: 'Horas do time', valor: -(v.horasReais * v.custoHora) }, { rotulo: 'Outros custos', valor: -v.outros }, { rotulo: 'Lucro', valor: lucro, total: true }] },
+        { tipo: 'barras', titulo: temOrc ? 'Margem orçada contra margem real' : 'Margem real do projeto', formato: 'pct',
+          dados: temOrc ? [{ rotulo: 'Orçada', valor: margemOrc, tom: 'hachurado' }, { rotulo: 'Real', valor: margem, tom: 'cheio' }] : [{ rotulo: 'Real', valor: margem, tom: 'cheio' }] },
       ],
       diagnostico: { tipo, titulo, texto, pontos },
     };

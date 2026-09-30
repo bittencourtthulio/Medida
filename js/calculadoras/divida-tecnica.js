@@ -39,6 +39,20 @@ registrar({
     } else {
       pontos.push(`Você está dentro da meta de ${pct(meta, 0)}. Mantenha o acompanhamento: a dívida costuma crescer devagar e só aparece quando a capacidade de entrega já caiu.`);
     }
+    const paineis = [
+      { tipo: 'barras', titulo: 'Tempo não planejado: real contra aceitável', formato: 'pct',
+        dados: [
+          { rotulo: 'Hoje', valor: p, tom: 'cheio' },
+          { rotulo: 'Meta aceitável', valor: meta, tom: 'vazado' },
+        ] },
+      { tipo: 'composicao', titulo: 'Como o tempo de engenharia é gasto', formato: 'brl',
+        nota: 'Parte da folha mensal de engenharia.',
+        partes: [
+          { rotulo: 'Entrega planejada', valor: folha * (1 - p), tom: 'vazado' },
+          { rotulo: 'Não planejado dentro da meta', valor: folha * Math.min(p, meta), tom: 'hachurado' },
+          { rotulo: 'Excedente sobre a meta', valor: excRs, tom: 'cheio' },
+        ] },
+    ];
     return {
       kpis: [
         { nome: 'Custo mensal do tempo não planejado', valor: brl(custoMes), nota: `${pct(p, 0)} de ${brl(folha)} de folha`, selo: tipo === 'good' ? ['good', 'na meta'] : tipo === 'warn' ? ['warn', 'acima da meta'] : ['bad', 'muito acima'] },
@@ -53,6 +67,7 @@ registrar({
         texto: `${pct(p, 0)} do tempo do time vai para o que não estava planejado. A comparação é com a meta que você definiu (${pct(meta, 0)}), não com um número universal. Dívida técnica é custo de capacidade: menos entregas, roadmap mais lento e, no fim, menos receita e retenção.`,
         pontos,
       },
+      paineis,
     };
   },
 });

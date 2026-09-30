@@ -98,7 +98,15 @@ registrar({
     const texto = comCliente.length > 1
       ? `O canal mais caro custa ${brl(difRs)} a mais por cliente que o mais barato. O CAC blended de ${brl(blended)} esconde essa diferença: olhe canal a canal antes de decidir onde colocar a próxima verba.`
       : `O CAC blended é ${brl(blended)}. Com um único canal com resultado, use esse número como base e compare com outros canais nos próximos meses.`;
-    return { kpis, diagnostico: { tipo, titulo, texto, pontos } };
+    const paineis = [
+      { tipo: 'barras', titulo: 'CAC por canal', formato: 'brl', nota: 'Quanto custa um cliente em cada canal, contra o CAC blended.',
+        dados: comCliente.map(c => ({ rotulo: c.nome, valor: c.cac, tom: c === melhor && comCliente.length > 1 ? 'cheio' : 'hachurado' })),
+        meta: isFinite(blended) && blended > 0 ? { rotulo: 'CAC blended', valor: blended } : undefined },
+    ];
+    const comPayback = comCliente.filter(c => isFinite(c.payback));
+    if (comPayback.length) paineis.push({ tipo: 'barras', titulo: 'Payback por canal', formato: 'mes', nota: 'Meses de margem para devolver o CAC, sem considerar churn.',
+      dados: comPayback.map(c => ({ rotulo: c.nome, valor: c.payback, tom: 'pontilhado' })) });
+    return { kpis, diagnostico: { tipo, titulo, texto, pontos }, paineis };
   },
 });
 })();

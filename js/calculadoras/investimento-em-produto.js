@@ -62,8 +62,16 @@ registrar({
       pontos.push(`Ou, com o mesmo ritmo de vendas, uma mensalidade de cerca de ${brl(Math.ceil(precoNec))} (hoje: ${brl(v.preco)}).`);
     }
     if (ch > 0) pontos.push(`O churn importa: com ${pct(ch)} ao mês, a base tende a estabilizar perto de ${num(v.novos / ch, 0)} clientes, e o MRR não passa de ${brl(v.novos / ch * v.preco)} sem mais esforço de aquisição.`);
-    const linhasHtml = [3, 6, 12, 18, 24].map(t => `<tr><td>Mês ${t}</td><td>${num(res[t].clientes, 0)}</td><td>${brl(res[t].mrr)}</td><td>${brl(res[t].margemMes)}</td><td>${brl(res[t].acum)}</td></tr>`).join('');
-    const extra = `<section class="card"><h3>Trajetória do produto</h3><table><thead><tr><th>Mês</th><th>Clientes</th><th>MRR</th><th>Resultado do mês</th><th>Acumulado (já abatido o MVP)</th></tr></thead><tbody>${linhasHtml}</tbody></table></section>`;
+    const linhasTab = [3, 6, 12, 18, 24].map(t => [`Mês ${t}`, num(res[t].clientes, 0), brl(res[t].mrr), { v: brl(res[t].margemMes), tom: res[t].margemMes >= 0 ? 'pos' : 'neg' }, { v: brl(res[t].acum), tom: res[t].acum >= 0 ? 'pos' : 'neg' }]);
+    const horizonte = Math.max(24, Math.min(MAX, payback !== null ? payback + 6 : 24));
+    const pontosAcum = [{ x: 0, y: -invest }]; for (let t = 1; t <= horizonte; t++) pontosAcum.push({ x: t, y: res[t].acum });
+    const paineis = [
+      { tipo: 'linha', titulo: 'Resultado acumulado, já abatido o MVP', formato: 'brl', eixoX: 'Meses após o início do MVP', nota: 'Conta os meses a partir do lançamento; o ponto zero é o investimento no MVP.',
+        series: [{ nome: 'Acumulado', pontos: pontosAcum }], marcas: payback !== null ? [{ x: payback, y: res[payback].acum, rotulo: 'Payback' }] : [] },
+      { tipo: 'barras', titulo: 'MRR ao longo do tempo', formato: 'brl',
+        dados: [3, 6, 12, 24].map((t, i) => ({ rotulo: `Mês ${t}`, valor: res[t].mrr, tom: i === 3 ? 'cheio' : 'hachurado' })), meta: { rotulo: 'Custo de manutenção por mês', valor: v.manut } },
+      { tipo: 'tabela', titulo: 'Trajetória do produto', colunas: ['Mês', 'Clientes', 'MRR', 'Resultado do mês', 'Acumulado (já abatido o MVP)'], linhas: linhasTab },
+    ];
     return {
       kpis: [
         { nome: 'Investimento total', valor: brl(invest), nota: 'pessoas × meses × custo mensal' },
@@ -78,7 +86,7 @@ registrar({
         texto: 'Simulação mês a mês: entram clientes novos, saem pelo churn, e a margem cobre a manutenção antes de abater o MVP.',
         pontos,
       },
-      extra,
+      paineis,
     };
   },
 });

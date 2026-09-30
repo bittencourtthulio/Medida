@@ -3,6 +3,7 @@ registrar({
   id: 'retrabalho-e-escopo',
   nome: 'Retrabalho e escopo aberto',
   categoria: 'Entrega e Operação',
+  termos: 'retrabalho bug correção escopo aberto scope creep pedido extra sem aditivo horas perdidas desperdício do time mudança de escopo não cobrada qualidade entrega',
   descricao: 'Quanto o retrabalho e o escopo aberto custam por mês, e quantas horas voltam para o time se você cortar pela metade.',
   campos: [
     { id: 'horas', rotulo: 'Horas totais do time de desenvolvimento no mês', valor: 1200, dica: 'Horas pagas do time que produz: por exemplo, 8 pessoas × 150 h.' },
@@ -41,6 +42,12 @@ registrar({
         { nome: 'Custo por ano', valor: brl(custoAno), nota: 'mantido o ritmo atual' },
         { nome: 'Horas recuperáveis', valor: num(hRecup, 0) + ' h/mês', nota: 'se o desperdício cair pela metade' },
         { nome: 'R$ recuperáveis', valor: brl(hRecup * v.custoHora), nota: 'por mês, na mesma hipótese' },
+      ],
+      paineis: [
+        { tipo: 'composicao', titulo: 'Para onde vão as horas do time', formato: 'h',
+          partes: [{ rotulo: 'Horas úteis', valor: Math.max(0, v.horas - hPerdidas), tom: 'cheio' }, { rotulo: 'Retrabalho e bugs', valor: hRet, tom: 'hachurado' }, { rotulo: 'Escopo não cobrado', valor: hEsc, tom: 'pontilhado' }] },
+        { tipo: 'barras', titulo: 'Quanto o desperdício custa por mês', formato: 'brl',
+          dados: [{ rotulo: 'Retrabalho', valor: hRet * v.custoHora, tom: 'hachurado' }, { rotulo: 'Escopo aberto', valor: hEsc * v.custoHora, tom: 'pontilhado' }, { rotulo: 'Recuperável (metade)', valor: hRecup * v.custoHora, tom: 'cheio' }] },
       ],
       diagnostico: {
         tipo,

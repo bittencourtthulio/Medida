@@ -3,6 +3,7 @@ registrar({
   id: 'utilizacao-do-time',
   nome: 'Utilização do time',
   categoria: 'Entrega e Operação',
+  termos: 'utilização taxa de utilização horas faturáveis billable ociosidade time ocioso capacidade vendida ponto de equilíbrio do time quanto do time está vendido contratar devo contratar',
   descricao: 'Seu time está vendendo as horas que tem? Veja a utilização, a receita deixada na mesa e a margem do time.',
   campos: [
     { id: 'pessoas', rotulo: 'Pessoas alocáveis', valor: 8, dica: 'Quem pode ser vendido em projeto. Gestão e comercial ficam de fora.' },
@@ -46,6 +47,14 @@ registrar({
         { nome: 'Receita mensal do time', valor: brl(receita), nota: 'horas faturadas × valor da hora' },
         { nome: 'Receita perdida pela ociosidade', valor: brl(perdida), nota: `${num(ociosas, 0)} h não faturadas × valor da hora` },
         { nome: 'Margem de contribuição do time', valor: brl(margem), nota: isFinite(margemPct) ? `${pct(margemPct)} da receita, depois do custo de todas as horas` : 'receita − custo do time' },
+      ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Utilização real contra o ponto de equilíbrio', formato: 'pct',
+          dados: [{ rotulo: 'Utilização real', valor: util, tom: 'cheio' }, { rotulo: 'Equilíbrio', valor: equilibrio, tom: 'vazado' }] },
+        { tipo: 'composicao', titulo: 'Horas disponíveis: vendidas e ociosas', formato: 'h',
+          partes: [{ rotulo: 'Horas faturadas', valor: Math.min(v.horasFat, capacidade), tom: 'cheio' }, { rotulo: 'Horas ociosas', valor: ociosas, tom: 'vazado' }] },
+        { tipo: 'cascata', titulo: 'Da receita à margem do time, por mês', formato: 'brl',
+          passos: [{ rotulo: 'Receita', valor: receita, total: true }, { rotulo: 'Custo do time', valor: -custoTime }, { rotulo: 'Margem', valor: margem, total: true }] },
       ],
       diagnostico: {
         tipo,

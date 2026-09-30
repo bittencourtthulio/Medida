@@ -15,7 +15,8 @@ window.fmt = {
  *     calcular(v) -> {
  *       kpis: [{ nome, valor, nota, selo?: ['good'|'warn'|'bad', 'texto'] }],
  *       diagnostico: { tipo: 'good'|'warn'|'bad', titulo, texto, pontos?: [] },
- *       extra?: 'html'   // gráficos e tabelas opcionais
+ *       paineis: [{ tipo, titulo, ... }]   // dashboard: barras, composicao, funil, linha, cascata, tabela (js/graficos.js)
+ *     termos: 'palavras e perguntas que levam a esta calculadora' (busca e chat)
  *     }
  *   })
  * v traz os valores já numéricos (checkbox = boolean), nunca negativos.

@@ -46,6 +46,23 @@ registrar({
     }
     if (infraPct > 0.1) pontos.push(`Onde agir primeiro: cortar 20% da conta de infraestrutura devolve ${brl(v.infra * 0.2)} por mês e sobe a margem em ${num(infraPct * 0.2 * 100)} pontos percentuais. Comece pelo item mais caro da fatura.`);
     if (v.fixa < 100 && infraPct > 0.1) pontos.push(`A parte variável (${brl(v.infra * (1 - fixa))} por mês) é a que escala com clientes: monitorar custo por cliente ajuda a achar quem consome mais do que paga.`);
+    const paineis = [
+      { tipo: 'composicao', titulo: 'Para onde vai a receita mensal', formato: 'brl',
+        partes: [
+          { rotulo: 'Infraestrutura', valor: v.infra, tom: 'cheio' },
+          { rotulo: 'Custos variáveis', valor: receita * varPct, tom: 'hachurado' },
+          { rotulo: 'Margem bruta', valor: Math.max(0, margemRs), tom: 'vazado' },
+        ] },
+    ];
+    if (cresce) {
+      paineis.push({ tipo: 'barras', titulo: 'Infraestrutura por cliente: hoje e no mês 12', formato: 'brl2',
+        nota: 'Proporcional: tudo cresce com os clientes. Com escala: a parte fixa dilui.',
+        dados: [
+          { rotulo: 'Hoje', valor: infraCli, tom: 'cheio' },
+          { rotulo: 'Mês 12, proporcional', valor: infraProp / clientes12, tom: 'hachurado' },
+          { rotulo: 'Mês 12, com escala', valor: infraEscala / clientes12, tom: 'pontilhado' },
+        ] });
+    }
     return {
       kpis: [
         { nome: 'Infraestrutura por cliente', valor: brl(infraCli, 2), nota: 'custo de infraestrutura ÷ clientes ativos' },
@@ -63,6 +80,7 @@ registrar({
         texto: `A infraestrutura leva ${pct(infraPct)} da receita e a margem bruta fica em ${pct(margem)}. Regra de bolso, não meta: até 10% da receita costuma ser confortável, acima de 20% pede revisão; depende do tipo de produto. O que interessa é a margem que sobra para pagar time, aquisição e lucro.`,
         pontos,
       },
+      paineis,
     };
   },
 });

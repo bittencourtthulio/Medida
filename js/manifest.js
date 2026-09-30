@@ -1,52 +1,82 @@
 // Lista das calculadoras do dashboard, agrupadas por área do DNA EXPX.
 // Cada nome é um arquivo em js/calculadoras/<nome>.js. Calculadora nova? Adicione o nome aqui.
 window.CALCULADORAS_ARQUIVOS = [
-  // Posicionamento
+  // Posicionamento (7)
   'concentracao-de-nicho',
   'desconto-e-percepcao',
   'multiplo-de-valor',
   'premio-de-preco',
   'teste-das-cinco-marcas',
-  // Aquisição
+  'teste-de-preco',
+  'win-rate-contra-concorrente',
+  // Aquisição (12)
   'cac-por-canal',
+  'custo-por-lead-qualificado',
+  'dependencia-de-indicacao',
   'funil-trafego',
+  'magic-number',
+  'parcerias-e-afiliados',
+  'payback-de-cac',
   'pipeline-cobertura',
   'prospeccao-outbound',
+  'roi-de-conteudo',
   'roi-saas',
-  // Conversão
+  'teste-ab-de-conversao',
+  // Conversão (9)
+  'capacidade-comercial',
+  'comissao-de-vendas',
   'forecast-ponderado',
   'impacto-do-desconto',
   'meta-de-vendas',
+  'mix-de-planos',
+  'motivos-de-perda',
   'precificacao',
   'velocidade-de-vendas',
-  // Entrega e Operação
+  // Entrega e Operação (8)
   'capacidade-de-entrega',
   'custo-de-implantacao',
+  'custo-do-atraso',
+  'lead-time-e-wip',
   'margem-por-projeto',
+  'previsibilidade-de-entrega',
   'retrabalho-e-escopo',
   'utilizacao-do-time',
-  // Finanças
+  // Finanças (11)
   'burn-multiple',
+  'dso-e-inadimplencia',
+  'financiar-crescimento-com-caixa',
+  'margem-bruta-saas',
+  'plano-anual-vs-mensal',
   'ponto-equilibrio',
   'projecao-mrr',
+  'receita-por-funcionario',
   'regra-dos-40',
   'runway-e-burn',
-  // Retenção e Expansão
+  'valuation-por-arr',
+  // Retenção e Expansão (10)
   'churn',
+  'concentracao-de-clientes',
+  'custo-do-suporte-por-cliente',
+  'expansao-por-upsell',
+  'health-score',
   'nps-e-saude',
   'nrr-grr',
   'quick-ratio',
   'renovacao-de-contratos',
-  // Produtos e Inovação
+  'retencao-por-coorte',
+  // Produtos e Inovação (6)
+  'adocao-de-feature',
   'investimento-em-produto',
   'priorizacao-rice',
   'retorno-de-feature',
   'servico-vs-produto',
   'tamanho-de-mercado',
-  // Tecnologia e IA
+  // Tecnologia e IA (7)
   'construir-ou-comprar',
   'custo-de-ia-por-uso',
+  'deflexao-de-suporte-com-ia',
   'divida-tecnica',
   'infra-por-cliente',
   'roi-de-automacao',
+  'uptime-e-indisponibilidade',
 ];

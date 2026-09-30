@@ -59,7 +59,7 @@ registrar({
     const fora = ideias.filter(x => !x.ok);
     if (fora.length) pontos.push(`${fora.map(x => x.nome).join(' e ')} ficou fora do ranking por ter algum campo zerado.`);
     pontos.push('O RICE ordena a fila, não decide por você. A nota só vale o quanto suas entradas forem honestas: confiança baixa derruba o score de propósito.');
-    const linhas = validas.map((x, k) => `<tr><td>${k + 1}º</td><td>${x.nome}</td><td>${num(x.score, 1)}</td><td>${num(x.e, 1)}</td></tr>`).join('');
+    const linhas = validas.map((x, k) => [`${k + 1}º`, x.nome, num(x.score, 1), num(x.e, 1), num(x.score / x.e, 1)]);
     return {
       kpis: [
         ...ideias.map(x => ({ nome: 'RICE da ' + x.nome, valor: x.ok ? num(x.score, 1) : '—', nota: x.ok ? `${num(x.a, 0)} × ${num(x.i, 2)} × ${pct(x.c, 0)} ÷ ${num(x.e, 1)}` : 'campo zerado' })),
@@ -71,7 +71,11 @@ registrar({
         texto: 'Método RICE (Intercom): alcance × impacto × confiança ÷ esforço. Quanto maior a nota, mais valor por pessoa-mês investida.',
         pontos,
       },
-      extra: `<section class="card"><h3>Ranking</h3><table><thead><tr><th>Posição</th><th>Ideia</th><th>Score RICE</th><th>Esforço (pessoas-mês)</th></tr></thead><tbody>${linhas}</tbody></table></section>`,
+      paineis: [
+        { tipo: 'barras', titulo: 'Score RICE por ideia', formato: 'num', dados: validas.map((x, i) => ({ rotulo: x.nome, valor: x.score, tom: i === 0 ? 'cheio' : 'hachurado' })) },
+        { tipo: 'barras', titulo: 'Esforço por ideia, em pessoas-mês', formato: 'num', dados: validas.map((x, i) => ({ rotulo: x.nome, valor: x.e, tom: i === 0 ? 'cheio' : 'hachurado' })) },
+        { tipo: 'tabela', titulo: 'Ranking', colunas: ['Posição', 'Ideia', 'Score RICE', 'Esforço (pessoas-mês)', 'Pontos por pessoa-mês'], linhas },
+      ],
     };
   },
 });

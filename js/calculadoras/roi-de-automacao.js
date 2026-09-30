@@ -36,6 +36,19 @@ registrar({
       pontos.push(`Ponto de virada: abaixo de ${pct(minimoPct, 0)} de resolução automática a economia líquida zera.`);
     }
     pontos.push('As horas economizadas só viram dinheiro se forem realocadas para trabalho faturável (vender, entregar, atender mais clientes) ou se evitarem uma contratação. Se o time simplesmente trabalha menos tempo nessa tarefa e nada muda, a economia existe no papel e não no caixa.');
+    const serie = [{ x: 0, y: -v.implantacao }];
+    for (let t = 1; t <= 12; t++) serie.push({ x: t, y: liquida * t - v.implantacao });
+    const paineis = [
+      { tipo: 'linha', titulo: 'Economia acumulada em 12 meses, já descontada a implantação', formato: 'brl', eixoX: 'meses', largo: true,
+        series: [{ nome: 'Saldo acumulado', pontos: serie }],
+        marcas: isFinite(payback) && payback <= 12 ? [{ x: payback, y: 0, rotulo: `payback em ${num(payback)} m` }] : [] },
+      { tipo: 'barras', titulo: 'Horas por mês: hoje e depois da automação', formato: 'h',
+        dados: [
+          { rotulo: 'Horas gastas hoje', valor: horasHoje, tom: 'cheio' },
+          { rotulo: 'Horas economizadas', valor: horas, tom: 'hachurado' },
+          { rotulo: 'Horas que sobram na tarefa', valor: horasHoje - horas, tom: 'vazado' },
+        ] },
+    ];
     return {
       kpis: [
         { nome: 'Horas economizadas por mês', valor: num(horas, 0) + ' h', nota: `${num(v.tarefas, 0)} tarefas × ${num(v.minutos, 0)} min × ${pct(v.auto / 100, 0)} ÷ 60` },
@@ -53,6 +66,7 @@ registrar({
           : `O payback de ${meses(payback)} considera só o custo das horas. Regra de bolso: investimentos que se pagam em até 6 meses costumam ser fáceis de aprovar; acima de 12, pedem uma razão além da economia. O ganho real depende de para onde o time leva as horas liberadas.`,
         pontos,
       },
+      paineis,
     };
   },
 });

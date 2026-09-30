@@ -3,6 +3,7 @@ registrar({
   id: 'capacidade-de-entrega',
   nome: 'Capacidade de entrega',
   categoria: 'Entrega e Operação',
+  termos: 'backlog velocidade do time throughput capacidade do time quando zera o backlog entrega por semana velocity sprint quantas semanas para entregar fila de demandas',
   descricao: 'Em quantas semanas o time entrega o backlog, e ele encolhe ou cresce com o ritmo atual de entrada?',
   campos: [
     { id: 'backlog', rotulo: 'Itens no backlog', valor: 120, dica: 'Itens ou pontos, na mesma unidade dos campos abaixo.' },
@@ -22,6 +23,8 @@ registrar({
     const fimTri = Math.max(0, v.backlog - saldo * v.semanas);
     const velNecessaria = v.semanas > 0 ? v.entrada + v.backlog / v.semanas : NaN;
     const vazio = v.backlog === 0;
+    const horizonte = Math.min(v.semanas > 0 ? Math.ceil(v.semanas) : 13, 104);
+    const serie = ritmo => { const p = []; for (let x = 0; x <= horizonte; x++) p.push({ x, y: Math.max(0, v.backlog - ritmo * x) }); return p; };
     const sinal = x => (x >= 0 ? '+' : '') + num(x);
     let tipo;
     if (vazio) tipo = saldo >= 0 ? 'good' : 'warn';
@@ -49,6 +52,12 @@ registrar({
         { nome: 'Situação do backlog', valor: situacao, nota: saldo > 0 ? 'sai mais do que entra' : saldo === 0 ? 'sai o mesmo que entra' : 'entra mais do que sai' },
         { nome: 'Entregas possíveis no trimestre', valor: num(possiveis, 0) + ' itens', nota: `${num(v.velocidade)} por semana × ${num(v.semanas, 0)} semanas` },
         { nome: 'Backlog no fim do trimestre', valor: num(fimTri, 0) + ' itens', nota: 'projeção linear, com entrada atual' },
+      ],
+      paineis: [
+        { tipo: 'linha', titulo: 'Backlog semana a semana', formato: 'int', eixoX: 'semanas',
+          series: [{ nome: 'Com a entrada atual', pontos: serie(saldo) }, { nome: 'Sem novas entradas', pontos: serie(v.velocidade) }] },
+        { tipo: 'barras', titulo: 'O que entra e o que sai no trimestre', formato: 'int',
+          dados: [{ rotulo: 'Backlog hoje', valor: v.backlog, tom: 'cinza' }, { rotulo: 'Entregas possíveis', valor: possiveis, tom: 'cheio' }, { rotulo: 'Novos itens que entram', valor: v.entrada * v.semanas, tom: 'hachurado' }, { rotulo: 'Backlog no fim', valor: fimTri, tom: 'vazado' }] },
       ],
       diagnostico: {
         tipo,

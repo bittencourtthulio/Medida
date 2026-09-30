@@ -50,6 +50,23 @@ registrar({
         { nome: 'MRR necessário', valor: brl(mrr), nota: `${num(clientes, 0)} clientes × ${brl(v.preco)}`, selo: produtoMaisEficiente ? ['good', 'abaixo da receita do serviço'] : ['warn', 'acima da receita do serviço'] },
         { nome: 'Margem por cliente adicional', valor: brl(porCliente), nota: 'por mês, sem horas proporcionais' },
       ],
+      paineis: [
+        { tipo: 'barras', titulo: 'Margem mensal: serviço contra produto', formato: 'brl',
+          nota: 'O produto com a metade, o total e o dobro dos clientes que igualam o serviço.',
+          dados: [
+            { rotulo: 'Serviço', valor: margemServ, tom: 'cheio' },
+            { rotulo: `Produto, ${num(Math.ceil(clientes / 2), 0)} clientes`, valor: Math.ceil(clientes / 2) * porCliente, tom: 'vazado' },
+            { rotulo: `Produto, ${num(clientes, 0)} clientes`, valor: clientes * porCliente, tom: 'hachurado' },
+            { rotulo: `Produto, ${num(clientes * 2, 0)} clientes`, valor: clientes * 2 * porCliente, tom: 'pontilhado' },
+          ] },
+        { tipo: 'linha', titulo: 'Margem do produto por número de clientes', formato: 'brl', eixoX: 'Clientes do produto',
+          nota: 'A linha cheia é a margem do produto; a tracejada é a margem fixa do serviço.',
+          series: [
+            { nome: 'Margem do produto', pontos: Array.from({ length: 13 }, (_, i) => { const x = Math.round(clientes * 1.5 * i / 12); return { x, y: x * porCliente }; }) },
+            { nome: 'Margem do serviço', pontos: [{ x: 0, y: margemServ }, { x: Math.max(1, Math.round(clientes * 1.5)), y: margemServ }] },
+          ],
+          marcas: [{ x: clientes, y: clientes * porCliente, rotulo: 'Empata' }] },
+      ],
       diagnostico: {
         tipo,
         titulo: produtoMaisEficiente ? 'O produto entrega a mesma margem com menos receita' : 'O produto precisa de mais receita para igualar o serviço',

@@ -59,7 +59,7 @@ registrar({
       : 'Só dê esse desconto se você tem motivo para esperar esse aumento de volume. Se ele serve para fechar uma negociação específica, o que vale é essa venda não acontecer sem ele.');
     pontos.push('Se a margem de contribuição estiver superestimada (custo variável esquecido), o volume necessário é ainda maior.');
     const faixa = Array.from(new Set([5, 10, 15, 20, 30, 40, v.desconto])).filter(x => x < v.margem).sort((x, y) => x - y);
-    const linhas = faixa.map(x => `<tr${x === v.desconto ? ' style="font-weight:600"' : ''}><td>${num(x, 1)}%</td><td>${brl(v.preco * (m - x / 100), 2)}</td><td>+${pct((x / 100) / (m - x / 100))}</td></tr>`).join('');
+    const curva = faixa.map(x => ({ x, y: (x / 100) / (m - x / 100) }));
     return {
       kpis: [
         { nome: 'Margem após o desconto', valor: pct(margemApos), nota: `sobre o preço com desconto (antes: ${pct(m, 0)})` },
@@ -76,8 +76,14 @@ registrar({
         texto: 'Desconto tira dinheiro direto da margem de contribuição, não do preço: por isso o volume necessário cresce mais rápido que o desconto.',
         pontos,
       },
-      extra: `<section class="card"><h2>Volume necessário por tamanho de desconto, com sua margem de ${pct(m, 0)}</h2><div class="scroll"><table>
-        <tr><th>Desconto</th><th>Contribuição por venda</th><th>Volume a mais</th></tr>${linhas}</table></div></section>`,
+      paineis: [
+        { tipo: 'linha', titulo: 'Volume a mais necessário por tamanho de desconto', formato: 'pct', eixoX: 'desconto (%)', linhaZero: true,
+          series: [{ nome: 'Volume a mais', pontos: curva }], marcas: [{ x: v.desconto, y: extra, rotulo: `${num(v.desconto, 1)}%` }] },
+        { tipo: 'barras', titulo: 'Contribuição por venda, antes e depois do desconto', formato: 'brl2',
+          dados: [{ rotulo: 'Sem desconto', valor: contribAtual, tom: 'cheio' }, { rotulo: 'Com desconto', valor: contribNova, tom: 'vazado' }] },
+        { tipo: 'tabela', titulo: `Volume necessário por desconto, com sua margem de ${pct(m, 0)}`, colunas: ['Desconto', 'Contribuição por venda', 'Volume a mais'],
+          linhas: faixa.map(x => [{ v: num(x, 1) + '%', tom: x === v.desconto ? 'pos' : '' }, brl(v.preco * (m - x / 100), 2), '+' + pct((x / 100) / (m - x / 100))]) },
+      ],
     };
   },
 });

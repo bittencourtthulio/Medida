@@ -48,6 +48,12 @@ registrar({
         { nome: 'MRR perdido', valor: brl(perdas), nota: `churn ${brl(v.churn)} + contração ${brl(v.contracao)}` },
         { nome: 'Expansão sobre perdas', valor: perdas > 0 ? num(v.expansao / perdas, 2) + 'x' : '—', nota: 'quanto a expansão repõe do que sai' },
       ],
+      paineis: [
+        { tipo: 'cascata', titulo: 'Do MRR inicial ao final da base antiga', nota: 'Sem nenhum cliente novo.', formato: 'brl',
+          passos: [{ rotulo: 'MRR inicial', valor: v.inicio, total: true }, { rotulo: 'Expansão', valor: v.expansao }, { rotulo: 'Contração', valor: -v.contracao }, { rotulo: 'Churn', valor: -v.churn }, { rotulo: 'MRR final', valor: finalBase, total: true }] },
+        { tipo: 'barras', titulo: 'NRR e GRR contra 100%', formato: 'pct',
+          dados: [{ rotulo: 'NRR', valor: nrr, tom: 'cheio' }, { rotulo: 'GRR', valor: grr, tom: 'hachurado' }], meta: { rotulo: 'MRR inicial (100%)', valor: 1 } },
+      ],
       diagnostico: {
         tipo,
         titulo: nrr >= 1 ? 'A base cresce sem nenhum cliente novo' : 'A base encolhe: a aquisição precisa cobrir o buraco',

@@ -27,10 +27,15 @@ registrar({
     const mediaProb = pond / bruto;
     const maior = etapas.reduce((m, e) => (e.pond > m.pond ? e : m), etapas[0]);
     const fechando = etapas[2].pond + etapas[3].pond;
-    const linhas = etapas.map(e => `<tr><td>${e.nome}</td><td>${brl(e.valor)}</td><td>${pct(e.prob, 0)}</td><td>${brl(e.pond)}</td><td>${pct(e.pond / pond, 0)}</td></tr>`).join('');
-    const extra = `<section class="card"><h2>Forecast por etapa</h2><div class="scroll"><table>
-      <tr><th>Etapa</th><th>Valor</th><th>Probabilidade</th><th>Ponderado</th><th>Parte do forecast</th></tr>${linhas}
-      <tr style="font-weight:600"><td>Total</td><td>${brl(bruto)}</td><td>${pct(mediaProb, 0)}</td><td>${brl(pond)}</td><td>100%</td></tr></table></div></section>`;
+    const paineis = [
+      { tipo: 'barras', titulo: 'Valor bruto e ponderado de cada etapa', formato: 'brl',
+        dados: etapas.flatMap(e => [{ rotulo: e.nome + ' (bruto)', valor: e.valor, tom: 'vazado' }, { rotulo: e.nome + ' (ponderado)', valor: e.pond, tom: 'cheio' }]),
+        ...(v.meta > 0 ? { meta: { rotulo: 'Meta', valor: v.meta } } : {}) },
+      { tipo: 'composicao', titulo: 'Quanto cada etapa pesa no forecast', formato: 'brl',
+        partes: etapas.map(e => ({ rotulo: e.nome, valor: e.pond })) },
+      { tipo: 'tabela', titulo: 'Forecast por etapa', colunas: ['Etapa', 'Valor', 'Probabilidade', 'Ponderado', 'Parte do forecast'],
+        linhas: [...etapas.map(e => [e.nome, brl(e.valor), pct(e.prob, 0), brl(e.pond), pct(pond > 0 ? e.pond / pond : 0, 0)]), ['Total', brl(bruto), pct(mediaProb, 0), brl(pond), '100%']] },
+    ];
     const base = [
       { nome: 'Forecast ponderado', valor: brl(pond), nota: 'soma de valor × probabilidade de cada etapa' },
       { nome: 'Pipeline bruto', valor: brl(bruto), nota: 'soma dos valores, sem ponderar' },
@@ -40,7 +45,7 @@ registrar({
       return {
         kpis: base,
         diagnostico: { tipo: 'warn', titulo: `Forecast de ${brl(pond)}, sem meta para comparar`, texto: 'Informe a meta do período para saber quanto dela o pipeline cobre.', pontos: [`A etapa que mais pesa é ${maior.nome}, com ${brl(maior.pond)} (${pct(maior.pond / pond, 0)} do forecast).`, 'As probabilidades são as que você digitou: se elas forem otimistas, o forecast também é.'] },
-        extra,
+        paineis,
       };
     }
     const cob = pond / v.meta;
@@ -72,7 +77,7 @@ registrar({
         texto: tipo === 'good' ? 'O valor ponderado pelas suas probabilidades alcança a meta, mas depende da honestidade dessas probabilidades.' : tipo === 'warn' ? 'O pipeline bruto é maior que a meta, mas o valor ponderado fica abaixo dela.' : 'Somando todo o pipeline, sem ponderar, o valor é menor que a meta.',
         pontos,
       },
-      extra,
+      paineis,
     };
   },
 });

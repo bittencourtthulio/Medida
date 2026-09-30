@@ -41,6 +41,20 @@ registrar({
       pontos.push(`Há folga para o uso crescer: a IA pode custar até ${brl(v.ticket * teto, 2)} por cliente antes de passar do teto, cerca de ${num(v.ticket * teto / custoCli, 1)} vezes o consumo atual.`);
     }
     pontos.push(`Cada 100 tokens a menos de saída por requisição economizam ${brl(100 * v.precoOut / 1e6 * v.reqs * v.clientes)} por mês; cada 100 a menos de entrada, ${brl(100 * v.precoIn / 1e6 * v.reqs * v.clientes)}.`);
+    const paineis = [
+      { tipo: 'composicao', titulo: 'De que é feito o custo de cada requisição', formato: 'brl2',
+        nota: 'Valores em reais por 1.000 requisições.',
+        partes: [
+          { rotulo: 'Tokens de entrada', valor: v.tokIn * v.precoIn / 1e6 * 1000, tom: 'cheio' },
+          { rotulo: 'Tokens de saída', valor: v.tokOut * v.precoOut / 1e6 * 1000, tom: 'hachurado' },
+        ] },
+      { tipo: 'barras', titulo: 'Custo de IA por cliente contra o teto', formato: 'brl2',
+        dados: [
+          { rotulo: 'Custo de IA por cliente', valor: custoCli, tom: 'cheio' },
+          { rotulo: 'Mensalidade', valor: v.ticket, tom: 'vazado' },
+        ],
+        meta: teto > 0 ? { rotulo: `Teto da IA (${pct(teto, 0)} da mensalidade)`, valor: v.ticket * teto } : undefined },
+    ];
     return {
       kpis: [
         { nome: 'Custo de IA por requisição', valor: brl(custoReq, 4), nota: '(entrada × preço entrada + saída × preço saída) ÷ 1 milhão' },
@@ -56,6 +70,7 @@ registrar({
         texto: `A IA custa ${brl(custoCli, 2)} por cliente, ${pct(peso)} da mensalidade, contra um teto de ${pct(teto, 0)} que você mesmo definiu. Os preços vêm dos campos que você preencheu: confira com a página de preços do provedor. Se o custo de IA crescer mais rápido que a receita, é a margem do produto que paga a conta.`,
         pontos,
       },
+      paineis,
     };
   },
 });

@@ -45,7 +45,17 @@ registrar({
     }
     if (temTicket) pontos.push(`A meta equivale a cerca de ${num(negociosMeta, 0)} negócios no ticket médio; isso pede ${num(oppsNec, 0)} oportunidades no pipeline, e você tem ${num(oppsTem, 0)}.`);
 
+    const paineis = [
+      { tipo: 'barras', titulo: 'Pipeline atual contra o necessário', formato: 'brl', nota: 'O marcador é a meta do período.',
+        dados: [{ rotulo: 'Pipeline atual', valor: v.pipeline, tom: 'cheio' }, { rotulo: 'Pipeline necessário', valor: pipNec, tom: 'hachurado' }],
+        meta: { rotulo: 'Meta do período', valor: v.meta } },
+      { tipo: 'cascata', titulo: falta ? 'Do pipeline atual ao necessário' : 'Do pipeline necessário à sobra', formato: 'brl',
+        passos: falta
+          ? [{ rotulo: 'Pipeline atual', valor: v.pipeline, total: true }, { rotulo: 'Déficit', valor: -delta }, { rotulo: 'Necessário', valor: pipNec, total: true }]
+          : [{ rotulo: 'Necessário', valor: pipNec, total: true }, { rotulo: 'Sobra', valor: delta }, { rotulo: 'Pipeline atual', valor: v.pipeline, total: true }] },
+    ];
     return {
+      paineis,
       kpis: [
         { nome: 'Cobertura atual', valor: num(cob, 1) + 'x', nota: `${brl(v.pipeline)} ÷ ${brl(v.meta)}`, selo: tipo === 'good' ? ['good', 'cobre a meta'] : tipo === 'warn' ? ['warn', 'abaixo do necessário'] : ['bad', 'abaixo de 1x'] },
         { nome: 'Cobertura necessária', valor: num(nec, 1) + 'x', nota: `1 ÷ ${pct(taxa, 0)} de fechamento` },
