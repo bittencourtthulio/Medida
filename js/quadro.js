@@ -1,0 +1,265 @@
+/* Quadro branco: caixas, notas, círculos e textos que se arrastam e se ligam com setas.
+   Sem servidor: o desenho fica só no localStorage do navegador. */
+(function () {
+  const CHAVE = 'medida_quadro_v1';
+  const $ = id => document.getElementById(id);
+  let est = { nos: [], setas: [], vista: { x: 0, y: 0, k: 1 } };
+  let sel = null;            // { tipo: 'no' | 'seta', id }
+  let desfazer = [];
+  let pronto = false, salvaT;
+
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  const mundo = () => $('qMundo');
+
+  /* ---------- estado ---------- */
+  function carregar() {
+    try { const s = JSON.parse(localStorage.getItem(CHAVE)); if (s && Array.isArray(s.nos) && Array.isArray(s.setas)) est = { vista: { x: 0, y: 0, k: 1 }, ...s }; } catch (e) { /* sem cache: começa vazio */ }
+  }
+  function salvar() {
+    clearTimeout(salvaT);
+    salvaT = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(est)); } catch (e) { /* cache cheio ou bloqueado */ } }, 250);
+  }
+  function foto() { desfazer.push(JSON.stringify(est)); if (desfazer.length > 50) desfazer.shift(); }
+  function volta() {
+    if (!desfazer.length) return;
+    est = JSON.parse(desfazer.pop()); sel = null; desenhar(); salvar();
+  }
+
+  /* ---------- desenho ---------- */
+  function aplicaVista() {
+    const { x, y, k } = est.vista;
+    mundo().style.transform = `translate(${x}px, ${y}px) scale(${k})`;
+    $('qZoom').textContent = Math.round(k * 100) + '%';
+    $('qGrade').style.backgroundPosition = `${x}px ${y}px`;
+    $('qGrade').style.backgroundSize = `${24 * k}px ${24 * k}px`;
+  }
+
+  function desenhar() {
+    const m = mundo();
+    m.querySelectorAll('.qn').forEach(e => e.remove());
+    est.nos.forEach(n => {
+      const e = document.createElement('div');
+      e.className = `qn ${n.tipo}${sel && sel.tipo === 'no' && sel.id === n.id ? ' sel' : ''}`;
+      e.dataset.id = n.id;
+      e.style.left = n.x + 'px'; e.style.top = n.y + 'px';
+      const t = document.createElement('div');
+      t.className = 'qt'; t.textContent = n.texto;
+      e.appendChild(t);
+      const h = document.createElement('span');
+      h.className = 'qh'; h.title = 'Arraste até outro elemento para ligar';
+      e.appendChild(h);
+      m.appendChild(e);
+    });
+    aplicaVista();
+    setas();
+  }
+
+  // ponto onde a reta do centro de `a` para o centro de `b` cruza a borda de `a`
+  function borda(a, b) {
+    const ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2;
+    const dx = bx - ax, dy = by - ay;
+    if (!dx && !dy) return { x: ax, y: ay };
+    const s = Math.min(dx ? (a.w / 2) / Math.abs(dx) : Infinity, dy ? (a.h / 2) / Math.abs(dy) : Infinity);
+    return { x: ax + dx * s, y: ay + dy * s };
+  }
+  function caixa(n) {
+    const e = mundo().querySelector(`.qn[data-id="${n.id}"]`);
+    return e ? { x: n.x, y: n.y, w: e.offsetWidth, h: e.offsetHeight } : null;
+  }
+
+  function setas() {
+    const svg = $('qSetas');
+    const linhas = est.setas.map(s => {
+      const A = est.nos.find(n => n.id === s.a), B = est.nos.find(n => n.id === s.b);
+      const a = A && caixa(A), b = B && caixa(B);
+      if (!a || !b) return '';
+      const p = borda(a, b), q = borda(b, a);
+      const on = sel && sel.tipo === 'seta' && sel.id === s.id;
+      return `<g data-seta="${s.id}" class="qs${on ? ' sel' : ''}"><line class="hit" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/><line class="vis" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" marker-end="url(#qPonta)"/></g>`;
+    }).join('');
+    svg.innerHTML = `<defs><marker id="qPonta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>${linhas}<line id="qTemp" class="qtemp" hidden/>`;
+  }
+
+  /* ---------- operações ---------- */
+  function centro() {
+    const r = $('qTela').getBoundingClientRect(), v = est.vista;
+    return { x: (r.width / 2 - v.x) / v.k, y: (r.height / 2 - v.y) / v.k };
+  }
+  function novo(tipo, texto, x, y) {
+    const n = { id: uid(), tipo, texto: texto || { caixa: 'Caixa', nota: 'Nota', circulo: 'Círculo', texto: 'Texto' }[tipo], x, y };
+    est.nos.push(n); return n;
+  }
+  function adiciona(tipo) {
+    foto();
+    const c = centro(), j = est.nos.length % 6 * 18;
+    const n = novo(tipo, null, c.x - 70 + j, c.y - 30 + j);
+    sel = { tipo: 'no', id: n.id }; desenhar(); salvar();
+    editar(n.id);
+  }
+  function apaga() {
+    if (!sel) return;
+    foto();
+    if (sel.tipo === 'no') { est.nos = est.nos.filter(n => n.id !== sel.id); est.setas = est.setas.filter(s => s.a !== sel.id && s.b !== sel.id); }
+    else est.setas = est.setas.filter(s => s.id !== sel.id);
+    sel = null; desenhar(); salvar();
+  }
+  function liga(a, b) {
+    if (a === b || est.setas.some(s => s.a === a && s.b === b)) return;
+    foto(); est.setas.push({ id: uid(), a, b }); setas(); salvar();
+  }
+
+  function editar(id) {
+    const e = mundo().querySelector(`.qn[data-id="${id}"] .qt`);
+    if (!e) return;
+    e.contentEditable = 'plaintext-only';
+    if (e.contentEditable !== 'plaintext-only') e.contentEditable = 'true';
+    e.focus();
+    const r = document.createRange(); r.selectNodeContents(e);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    const fim = () => {
+      e.removeEventListener('blur', fim);
+      e.contentEditable = 'false';
+      const n = est.nos.find(x => x.id === id), t = e.textContent.trim();
+      if (n && t !== n.texto) { foto(); n.texto = t; }
+      setas(); salvar();
+    };
+    e.addEventListener('blur', fim);
+  }
+
+  // modelos prontos: lista de textos ligados em sequência
+  const MODELOS = {
+    funil: { titulo: 'Funil de vendas', nos: ['Lead', 'Oportunidade', 'Proposta', 'Cliente'] },
+    unit: { titulo: 'Unit economics', nos: ['CAC', 'Payback', 'LTV', 'LTV / CAC'] },
+    retencao: { titulo: 'Receita recorrente', nos: ['Clientes novos', 'Base de clientes', 'Churn', 'MRR'] },
+  };
+  function modelo(chave) {
+    const m = MODELOS[chave]; if (!m) return;
+    foto();
+    const c = centro(), x0 = c.x - (m.nos.length * 190) / 2;
+    const ns = m.nos.map((t, i) => novo('caixa', t, x0 + i * 190, c.y - 25));
+    ns.slice(1).forEach((n, i) => est.setas.push({ id: uid(), a: ns[i].id, b: n.id }));
+    sel = null; desenhar(); salvar();
+  }
+
+  /* ---------- ponteiro ---------- */
+  function ponto(ev) {
+    const r = $('qTela').getBoundingClientRect(), v = est.vista;
+    return { x: (ev.clientX - r.left - v.x) / v.k, y: (ev.clientY - r.top - v.y) / v.k };
+  }
+
+  function aoPressionar(ev) {
+    if (ev.button !== 0 && ev.pointerType === 'mouse') return;
+    const alvo = ev.target;
+    if (alvo.closest('.qt[contenteditable="true"], .qt[contenteditable="plaintext-only"]')) return;
+    const h = alvo.closest('.qh'), no = alvo.closest('.qn'), seta = alvo.closest('[data-seta]');
+    if (h && no) return ligando(ev, no.dataset.id);
+
+    if (no) {
+      const n = est.nos.find(x => x.id === no.dataset.id);
+      const mudou = !(sel && sel.tipo === 'no' && sel.id === n.id);
+      sel = { tipo: 'no', id: n.id };
+      if (mudou) { mundo().querySelectorAll('.qn.sel').forEach(e => e.classList.remove('sel')); no.classList.add('sel'); }
+      setas();
+      const p0 = ponto(ev), x0 = n.x, y0 = n.y; let moveu = false;
+      const mv = e => {
+        const p = ponto(e);
+        if (!moveu && Math.hypot(p.x - p0.x, p.y - p0.y) * est.vista.k < 3) return;
+        if (!moveu) { foto(); moveu = true; }
+        n.x = x0 + p.x - p0.x; n.y = y0 + p.y - p0.y;
+        no.style.left = n.x + 'px'; no.style.top = n.y + 'px'; setas();
+      };
+      return arrasta(ev, mv, () => { if (moveu) salvar(); });
+    }
+
+    if (seta) {
+      sel = { tipo: 'seta', id: seta.dataset.seta };
+      mundo().querySelectorAll('.qn.sel').forEach(e => e.classList.remove('sel'));
+      setas(); return;
+    }
+
+    // fundo: limpa a seleção e move a vista
+    sel = null; mundo().querySelectorAll('.qn.sel').forEach(e => e.classList.remove('sel')); setas();
+    const cx = ev.clientX, cy = ev.clientY, v0 = { ...est.vista };
+    arrasta(ev, e => { est.vista.x = v0.x + e.clientX - cx; est.vista.y = v0.y + e.clientY - cy; aplicaVista(); }, salvar);
+  }
+
+  function arrasta(ev, mv, fim) {
+    const up = e => {
+      removeEventListener('pointermove', mv);
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', up);
+      fim && fim(e);
+    };
+    addEventListener('pointermove', mv);
+    addEventListener('pointerup', up);
+    addEventListener('pointercancel', up);
+  }
+
+  function ligando(ev, deId) {
+    const A = est.nos.find(n => n.id === deId), a = caixa(A);
+    const t = $('qTemp'); t.hidden = false;
+    const mv = e => {
+      const p = ponto(e), o = borda(a, { x: p.x, y: p.y, w: 0, h: 0 });
+      t.setAttribute('x1', o.x); t.setAttribute('y1', o.y); t.setAttribute('x2', p.x); t.setAttribute('y2', p.y);
+    };
+    mv(ev);
+    arrasta(ev, mv, e => {
+      t.hidden = true;
+      const sobre = document.elementFromPoint(e.clientX, e.clientY), no = sobre && sobre.closest('.qn');
+      if (no) liga(deId, no.dataset.id); else setas();
+    });
+  }
+
+  function aoRolar(ev) {
+    ev.preventDefault();
+    const v = est.vista, r = $('qTela').getBoundingClientRect();
+    if (ev.ctrlKey || ev.metaKey) {
+      // zoom em torno do cursor (pinça do trackpad ou Ctrl/⌘ + rolagem); rolagem simples move a vista
+      const k = Math.min(2.5, Math.max(0.25, v.k * Math.exp(-ev.deltaY * 0.0015)));
+      const px = ev.clientX - r.left, py = ev.clientY - r.top;
+      v.x = px - (px - v.x) * (k / v.k); v.y = py - (py - v.y) * (k / v.k); v.k = k;
+    } else { v.x -= ev.deltaX; v.y -= ev.deltaY; }
+    aplicaVista(); salvar();
+  }
+
+  function aoTeclar(ev) {
+    if ($('quadro').hidden) return;
+    if (ev.target.closest && ev.target.closest('[contenteditable="true"], [contenteditable="plaintext-only"], input, textarea')) return;
+    if ((ev.key === 'Delete' || ev.key === 'Backspace') && sel) { ev.preventDefault(); apaga(); }
+    else if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); volta(); }
+    else if (ev.key === 'Enter' && sel && sel.tipo === 'no') { ev.preventDefault(); editar(sel.id); }
+  }
+
+  function zoom(f) {
+    const v = est.vista, r = $('qTela').getBoundingClientRect();
+    const k = Math.min(2.5, Math.max(0.25, v.k * f));
+    const px = r.width / 2, py = r.height / 2;
+    v.x = px - (px - v.x) * (k / v.k); v.y = py - (py - v.y) * (k / v.k); v.k = k;
+    aplicaVista(); salvar();
+  }
+
+  /* ---------- montagem (uma vez) ---------- */
+  function montar() {
+    if (pronto) return; pronto = true;
+    const tela = $('qTela');
+    tela.addEventListener('pointerdown', aoPressionar);
+    tela.addEventListener('dblclick', ev => { const no = ev.target.closest('.qn'); if (no) { sel = { tipo: 'no', id: no.dataset.id }; editar(no.dataset.id); } });
+    tela.addEventListener('wheel', aoRolar, { passive: false });
+    document.addEventListener('keydown', aoTeclar);
+    $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => adiciona(b.dataset.add); });
+    $('qModelo').onchange = e => { modelo(e.target.value); e.target.value = ''; };
+    $('qApagar').onclick = apaga;
+    $('qDesfazer').onclick = volta;
+    $('qMais').onclick = () => zoom(1.2);
+    $('qMenos').onclick = () => zoom(1 / 1.2);
+    $('qLimpar').onclick = () => { if (est.nos.length && confirm('Limpar o quadro inteiro?')) { foto(); est = { nos: [], setas: [], vista: { x: 0, y: 0, k: 1 } }; sel = null; desenhar(); salvar(); } };
+  }
+
+  window.Quadro = {
+    abrir() {
+      montar();
+      if (!this.carregado) { carregar(); this.carregado = true; }
+      desenhar();
+    },
+  };
+})();

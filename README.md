@@ -22,6 +22,10 @@ Site estático (HTML, CSS e JavaScript puros, sem build) publicado no **GitHub P
 
 O app tem menu lateral por área, busca rápida (Ctrl/⌘ K) e, no início, um chat em que a pessoa escreve a dúvida ("meu caixa está acabando") e vê à direita as calculadoras mais indicadas. Não usa IA: é uma busca por palavras-chave com radicais e pesos (nome da calculadora, `js/termos.js`, descrição, campos e área). Para melhorar as respostas, enriqueça `js/termos.js`.
 
+## Quadro branco
+
+Em `#/quadro` (menu lateral): caixas, notas, círculos e textos que se arrastam e se ligam com setas, mais três modelos prontos (funil, unit economics, receita recorrente). Duplo clique edita, Delete apaga, Ctrl/⌘ Z desfaz, Ctrl/⌘ + rolagem dá zoom. O desenho fica só no `localStorage` do navegador. Código em `js/quadro.js`.
+
 ## Configurar o login (uma vez, uns 5 minutos)
 
 1. Acesse [console.firebase.google.com](https://console.firebase.google.com), crie um projeto (pode desativar o Google Analytics).

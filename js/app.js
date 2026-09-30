@@ -308,7 +308,7 @@
     $('shell').hidden = !logado;
     $('authSetup').hidden = Auth.configurado;
     $('auth').hidden = !!logado;
-    ['home', 'area', 'calc'].forEach(id => { $(id).hidden = true; });
+    ['home', 'area', 'calc', 'quadro'].forEach(id => { $(id).hidden = true; });
     menu(false);
     if (!logado) { setModo(location.hash === '#cadastro' ? 'cadastro' : 'entrar'); fechaPaleta(); return; }
     $('user').textContent = logado;
@@ -317,8 +317,12 @@
     const ma = location.hash.match(/^#\/area\/([\w-]+)/);
     const c = mc && porId(mc[1]);
     const a = ma && AREAS.find(x => x.slug === ma[1]);
+    const q = /^#\/quadro/.test(location.hash);
+    document.querySelector('main.page').classList.toggle('larga', q);
     let crumb = 'Início';
-    if (c) {
+    if (q) {
+      $('quadro').hidden = false; Quadro.abrir(); marcaNav('quadro'); crumb = 'Quadro branco';
+    } else if (c) {
       const ar = areaDe(c);
       $('calc').hidden = false; abrir(c); marcaNav(ar ? ar.slug : 'home');
       crumb = `${ar ? ar.nome + ' / ' : ''}${c.nome}`;
