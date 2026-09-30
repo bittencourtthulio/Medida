@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de ROI SaaS</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --text: #14171f; --muted: #6b7280; --line: #e4e7ec;
+    --accent: #4f46e5; --good: #15803d; --warn: #b45309; --bad: #b91c1c;
+    --good-bg: #dcfce7; --warn-bg: #fef3c7; --bad-bg: #fee2e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --card: #181b22; --text: #eceef3; --muted: #9aa3b2; --line: #2a2f3a;
+      --accent: #818cf8; --good: #4ade80; --warn: #fbbf24; --bad: #f87171;
+      --good-bg: #12301d; --warn-bg: #33270b; --bad-bg: #3a1414;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 12px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field { margin-bottom: 12px; }
+  .inp { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  .inp:focus-within { border-color: var(--accent); }
+  .inp span { padding: 0 10px; color: var(--muted); font-size: 13px; }
+  .inp input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; padding: 9px 10px; outline: none; }
+  .inp span + input { padding-left: 0; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .kpi .name { font-size: 12px; color: var(--muted); }
+  .kpi .val { font-size: 24px; font-weight: 650; margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .kpi .note { font-size: 12px; color: var(--muted); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .good { background: var(--good-bg); color: var(--good); }
+  .warn { background: var(--warn-bg); color: var(--warn); }
+  .bad { background: var(--bad-bg); color: var(--bad); }
+  svg { width: 100%; height: auto; display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; }
+  td.neg { color: var(--bad); } td.pos { color: var(--good); }
+  .scroll { max-height: 300px; overflow: auto; }
+  .stack > * + * { margin-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Calculadora de ROI para SaaS</h1>
+  <p class="sub">Receita recorrente: CAC, LTV, payback, break-even e ROI da operação de tráfego.</p>
+
+  <div class="grid">
+    <section class="card" id="form">
+      <h2>Premissas</h2>
+      <div class="field"><label for="invest">Investimento em tráfego (mês)</label>
+        <div class="inp"><span>R$</span><input id="invest" type="number" min="0" step="any" value="10000"></div></div>
+      <div class="field"><label for="outros">Outros custos de aquisição (mês)</label>
+        <div class="inp"><span>R$</span><input id="outros" type="number" min="0" step="any" value="0"></div>
+        <div class="hint">Comissão, time de vendas, ferramentas, criativos.</div></div>
+      <div class="field"><label for="vendas">Novos clientes (mês)</label>
+        <div class="inp"><input id="vendas" type="number" min="0" step="any" value="25"></div></div>
+      <div class="field"><label for="ticket">Ticket médio (mensalidade por cliente)</label>
+        <div class="inp"><span>R$</span><input id="ticket" type="number" min="0" step="any" value="497"></div></div>
+      <div class="field"><label for="margem">Margem variável</label>
+        <div class="inp"><input id="margem" type="number" min="0" max="100" step="any" value="80"><span>%</span></div>
+        <div class="hint">Receita menos custos que variam por cliente: infra, gateway, impostos e suporte.</div></div>
+      <div class="field"><label for="churn">Churn mensal</label>
+        <div class="inp"><input id="churn" type="number" min="0" max="100" step="any" value="4"><span>%</span></div></div>
+      <div class="field"><label for="leads">Leads gerados (mês) <small>(opcional)</small></label>
+        <div class="inp"><input id="leads" type="number" min="0" step="any" value="0"></div>
+        <div class="hint">Preenchido, mostra o CPL e a conversão lead → cliente.</div></div>
+      <div class="field" style="margin-bottom:0"><label for="horizonte">Horizonte de análise</label>
+        <div class="inp"><input id="horizonte" type="number" min="1" max="60" step="1" value="12"><span>meses</span></div></div>
+    </section>
+
+    <div class="stack">
+      <div class="kpis" id="kpis"></div>
+
+      <section class="card">
+        <h2>Lucro acumulado da coorte (líquido do investimento)</h2>
+        <div id="chart"></div>
+      </section>
+
+      <section class="card">
+        <h2>Mês a mês</h2>
+        <div class="scroll"><table id="tabela"></table></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const brl = v => isFinite(v) ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) : '—';
+const num = (v, d = 1) => isFinite(v) ? v.toLocaleString('pt-BR', { maximumFractionDigits: d }) : '—';
+const pct = v => isFinite(v) ? num(v * 100, 1) + '%' : '—';
+const val = id => Math.max(0, parseFloat($(id).value) || 0);
+
+function calcular() {
+  const invest = val('invest'), outros = val('outros'), vendas = val('vendas'),
+        ticket = val('ticket'), margem = Math.min(val('margem'), 100) / 100,
+        churn = Math.min(val('churn'), 100) / 100, leads = val('leads'),
+        H = Math.min(Math.max(Math.round(val('horizonte')) || 12, 1), 60);
+
+  const custoTotal = invest + outros;
+  const cac = vendas > 0 ? custoTotal / vendas : NaN;
+  const margemCliente = ticket * margem;               // contribuição mensal por cliente
+  const vida = churn > 0 ? 1 / churn : Infinity;       // meses
+  const ltv = margemCliente * vida;                    // LTV pela margem
+  const ltvReceita = ticket * vida;
+  const ltvCac = ltv / cac;
+  const paybackSimples = margemCliente > 0 ? cac / margemCliente : NaN;
+  const novoMrr = vendas * ticket;
+  const roas = invest > 0 ? novoMrr / invest : NaN;
+  const cacMaxSaudavel = ltv / 3;
+  const beClientes = margemCliente > 0 ? custoTotal / margemCliente : NaN; // clientes p/ pagar o custo no 1º mês
+
+  // simulação da coorte, mês a mês (até 60 meses para achar o break-even)
+  const linhas = [];
+  let acum = -custoTotal, ativos = vendas, breakEven = NaN, prev = acum;
+  for (let t = 1; t <= 60; t++) {
+    const mrr = ativos * ticket, contrib = mrr * margem;
+    prev = acum; acum += contrib;
+    if (isNaN(breakEven) && acum >= 0 && custoTotal >= 0) {
+      breakEven = contrib > 0 ? (t - 1) + (0 - prev) / contrib : t;
+    }
+    linhas.push({ t, ativos, mrr, contrib, acum });
+    ativos *= (1 - churn);
+  }
+  const noHorizonte = linhas[H - 1];
+  const lucroH = noHorizonte.acum;
+  const roiH = custoTotal > 0 ? lucroH / custoTotal : NaN;
+  const roiVida = custoTotal > 0 && isFinite(ltv) ? (ltv * vendas - custoTotal) / custoTotal : NaN;
+
+  return { invest, custoTotal, vendas, leads, H, cac, ltv, ltvReceita, ltvCac, vida, paybackSimples,
+           novoMrr, roas, cacMaxSaudavel, beClientes, breakEven, lucroH, roiH, roiVida, margemCliente, linhas };
+}
+
+const badge = (cls, txt) => `<span class="badge ${cls}">${txt}</span>`;
+const kpi = (name, value, note, b = '') => `<div class="kpi"><div class="name">${name}</div><div class="val">${value}</div><div class="note">${note} ${b}</div></div>`;
+
+function render() {
+  const r = calcular();
+
+  const bLtvCac = !isFinite(r.ltvCac) ? (r.ltvCac > 0 ? badge('good', 'excelente') : '')
+    : r.ltvCac >= 3 ? badge('good', 'saudável (≥ 3x)') : r.ltvCac >= 1 ? badge('warn', 'apertado (< 3x)') : badge('bad', 'destrói valor (< 1x)');
+  const bPay = isNaN(r.breakEven) ? badge('bad', 'não paga em 60m')
+    : r.breakEven <= 6 ? badge('good', 'rápido') : r.breakEven <= 12 ? badge('warn', 'ok') : badge('bad', 'lento (> 12m)');
+  const bRoi = isNaN(r.roiH) ? '' : r.roiH >= 0 ? badge('good', 'positivo') : badge('bad', 'negativo');
+
+  let k = '';
+  k += kpi('CAC', brl(r.cac), `${brl(r.custoTotal)} ÷ ${num(r.vendas, 1)} clientes`);
+  k += kpi('LTV (margem)', isFinite(r.ltv) ? brl(r.ltv) : '∞', `vida útil média: ${isFinite(r.vida) ? num(r.vida, 1) + ' meses' : 'sem churn'}`);
+  k += kpi('LTV / CAC', isFinite(r.ltvCac) ? num(r.ltvCac, 2) + 'x' : '∞', 'meta: 3x ou mais', bLtvCac);
+  k += kpi('Break-even da coorte', isNaN(r.breakEven) ? '—' : num(r.breakEven, 1) + ' meses', 'considera o churn mês a mês', bPay);
+  k += kpi('Payback do CAC (simples)', isNaN(r.paybackSimples) ? '—' : num(r.paybackSimples, 1) + ' meses', 'CAC ÷ margem mensal por cliente, sem churn');
+  k += kpi(`ROI em ${r.H} meses`, pct(r.roiH), `lucro acumulado ${brl(r.lucroH)}`, bRoi);
+  k += kpi('ROI no LTV (vida toda)', pct(r.roiVida), 'retorno total da coorte sobre o custo');
+  k += kpi('Novo MRR gerado', brl(r.novoMrr), `ARR: ${brl(r.novoMrr * 12)}`);
+  k += kpi('ROAS (1º mês)', isNaN(r.roas) ? '—' : num(r.roas, 2) + 'x', 'novo MRR ÷ investimento em tráfego');
+  k += kpi('Margem por cliente/mês', brl(r.margemCliente), `LTV pela receita: ${isFinite(r.ltvReceita) ? brl(r.ltvReceita) : '∞'}`);
+  k += kpi('CAC máximo p/ LTV/CAC 3x', isFinite(r.cacMaxSaudavel) ? brl(r.cacMaxSaudavel) : '∞', 'teto de CAC para manter a operação saudável');
+  k += kpi('Clientes p/ pagar o custo no mês 1', isNaN(r.beClientes) ? '—' : num(r.beClientes, 1), 'ponto de equilíbrio do primeiro mês');
+  if (r.leads > 0) {
+    k += kpi('CPL', brl(r.invest / r.leads), `${num(r.leads, 0)} leads no mês`);
+    k += kpi('Conversão lead → cliente', pct(r.vendas / r.leads), `${num(r.vendas, 1)} vendas`);
+  }
+  $('kpis').innerHTML = k;
+
+  desenharGrafico(r);
+
+  const cab = '<tr><th>Mês</th><th>Clientes ativos</th><th>MRR</th><th>Margem</th><th>Acumulado</th></tr>';
+  const corpo = r.linhas.slice(0, r.H).map(l =>
+    `<tr><td>${l.t}</td><td>${num(l.ativos, 1)}</td><td>${brl(l.mrr)}</td><td>${brl(l.contrib)}</td><td class="${l.acum >= 0 ? 'pos' : 'neg'}">${brl(l.acum)}</td></tr>`).join('');
+  $('tabela').innerHTML = cab + corpo;
+}
+
+function desenharGrafico(r) {
+  const W = 640, Hh = 240, m = { l: 64, r: 12, t: 12, b: 28 };
+  const pts = [{ t: 0, acum: -r.custoTotal }, ...r.linhas.slice(0, r.H)];
+  const ys = pts.map(p => p.acum);
+  let min = Math.min(...ys, 0), max = Math.max(...ys, 0);
+  if (min === max) max = min + 1;
+  const x = t => m.l + (t / r.H) * (W - m.l - m.r);
+  const y = v => m.t + (1 - (v - min) / (max - min)) * (Hh - m.t - m.b);
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.acum).toFixed(1)}`).join(' ');
+  const ticks = [min, min + (max - min) / 2, max].map(v =>
+    `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${brl(v)}</text>`).join('');
+  const passo = Math.max(1, Math.ceil(r.H / 12));
+  const xl = pts.filter(p => p.t % passo === 0).map(p =>
+    `<text x="${x(p.t)}" y="${Hh - 8}" text-anchor="middle" font-size="11" fill="var(--muted)">${p.t}</text>`).join('');
+  const be = (!isNaN(r.breakEven) && r.breakEven <= r.H)
+    ? `<circle cx="${x(r.breakEven)}" cy="${y(0)}" r="5" fill="var(--good)"/><text x="${x(r.breakEven)}" y="${y(0) - 10}" text-anchor="middle" font-size="11" fill="var(--good)">break-even ${num(r.breakEven, 1)}m</text>` : '';
+  $('chart').innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Lucro acumulado por mês">
+    ${ticks}<line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="4 3"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>${be}${xl}</svg>`;
+}
+
+document.querySelectorAll('#form input').forEach(i => i.addEventListener('input', render));
+render();
+</script>
+</body>
+</html>
