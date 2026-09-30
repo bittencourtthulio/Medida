@@ -75,6 +75,15 @@
         <div class="hint">Receita menos custos que variam por cliente: infra, gateway, impostos e suporte.</div></div>
       <div class="field"><label for="churn">Churn mensal</label>
         <div class="inp"><input id="churn" type="number" min="0" max="100" step="any" value="4"><span>%</span></div></div>
+      <div class="field"><label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="impl" type="checkbox"> Cobra implantação (ativação)?</label>
+        <div class="hint">O lucro da implantação abate o CAC.</div></div>
+      <div id="implCampos" hidden>
+        <div class="field"><label for="implValor">Valor da implantação (por cliente)</label>
+          <div class="inp"><span>R$</span><input id="implValor" type="number" min="0" step="any" value="1500"></div></div>
+        <div class="field"><label for="implMargem">Margem de lucro da implantação</label>
+          <div class="inp"><input id="implMargem" type="number" min="0" max="100" step="any" value="60"><span>%</span></div>
+          <div class="hint">Valor menos o custo de entregar a implantação (time, horas, ferramentas).</div></div>
+      </div>
       <div class="field"><label for="leads">Leads gerados (mês) <small>(opcional)</small></label>
         <div class="inp"><input id="leads" type="number" min="0" step="any" value="0"></div>
         <div class="hint">Preenchido, mostra o CPL e a conversão lead → cliente.</div></div>
@@ -112,7 +121,12 @@ function calcular() {
         H = Math.min(Math.max(Math.round(val('horizonte')) || 12, 1), 60);
 
   const custoTotal = invest + outros;
-  const cac = vendas > 0 ? custoTotal / vendas : NaN;
+  const cobraImpl = $('impl').checked;
+  const implValor = cobraImpl ? val('implValor') : 0;
+  const implMargem = Math.min(val('implMargem'), 100) / 100;
+  const lucroImpl = implValor * implMargem;            // lucro da implantação por cliente
+  const cacBruto = vendas > 0 ? custoTotal / vendas : NaN;
+  const cac = vendas > 0 ? Math.max(0, cacBruto - lucroImpl) : NaN; // CAC líquido, abatido da implantação
   const margemCliente = ticket * margem;               // contribuição mensal por cliente
   const vida = churn > 0 ? 1 / churn : Infinity;       // meses
   const ltv = margemCliente * vida;                    // LTV pela margem
@@ -122,11 +136,12 @@ function calcular() {
   const novoMrr = vendas * ticket;
   const roas = invest > 0 ? novoMrr / invest : NaN;
   const cacMaxSaudavel = ltv / 3;
-  const beClientes = margemCliente > 0 ? custoTotal / margemCliente : NaN; // clientes p/ pagar o custo no 1º mês
+  const beClientes = margemCliente + lucroImpl > 0 ? custoTotal / (margemCliente + lucroImpl) : NaN; // clientes p/ pagar o custo no 1º mês
 
   // simulação da coorte, mês a mês (até 60 meses para achar o break-even)
   const linhas = [];
-  let acum = -custoTotal, ativos = vendas, breakEven = NaN, prev = acum;
+  const acum0 = -custoTotal + vendas * lucroImpl;      // caixa inicial: investimento menos lucro da implantação
+  let acum = acum0, ativos = vendas, breakEven = acum0 >= 0 ? 0 : NaN, prev = acum;
   for (let t = 1; t <= 60; t++) {
     const mrr = ativos * ticket, contrib = mrr * margem;
     prev = acum; acum += contrib;
@@ -139,9 +154,9 @@ function calcular() {
   const noHorizonte = linhas[H - 1];
   const lucroH = noHorizonte.acum;
   const roiH = custoTotal > 0 ? lucroH / custoTotal : NaN;
-  const roiVida = custoTotal > 0 && isFinite(ltv) ? (ltv * vendas - custoTotal) / custoTotal : NaN;
+  const roiVida = custoTotal > 0 && isFinite(ltv) ? (ltv * vendas + vendas * lucroImpl - custoTotal) / custoTotal : NaN;
 
-  return { invest, custoTotal, vendas, leads, H, cac, ltv, ltvReceita, ltvCac, vida, paybackSimples,
+  return { invest, custoTotal, vendas, leads, H, cac, cacBruto, lucroImpl, acum0, ltv, ltvReceita, ltvCac, vida, paybackSimples,
            novoMrr, roas, cacMaxSaudavel, beClientes, breakEven, lucroH, roiH, roiVida, margemCliente, linhas };
 }
 
@@ -158,11 +173,14 @@ function render() {
   const bRoi = isNaN(r.roiH) ? '' : r.roiH >= 0 ? badge('good', 'positivo') : badge('bad', 'negativo');
 
   let k = '';
-  k += kpi('CAC', brl(r.cac), `${brl(r.custoTotal)} ÷ ${num(r.vendas, 1)} clientes`);
+  k += r.lucroImpl > 0
+    ? kpi('CAC líquido', brl(r.cac), `CAC bruto ${brl(r.cacBruto)} − lucro da implantação ${brl(r.lucroImpl)}`)
+    : kpi('CAC', brl(r.cac), `${brl(r.custoTotal)} ÷ ${num(r.vendas, 1)} clientes`);
+  if (r.lucroImpl > 0) k += kpi('Lucro total da implantação', brl(r.lucroImpl * r.vendas), `${num(r.vendas, 1)} clientes × ${brl(r.lucroImpl)}`);
   k += kpi('LTV (margem)', isFinite(r.ltv) ? brl(r.ltv) : '∞', `vida útil média: ${isFinite(r.vida) ? num(r.vida, 1) + ' meses' : 'sem churn'}`);
   k += kpi('LTV / CAC', isFinite(r.ltvCac) ? num(r.ltvCac, 2) + 'x' : '∞', 'meta: 3x ou mais', bLtvCac);
   k += kpi('Break-even da coorte', isNaN(r.breakEven) ? '—' : num(r.breakEven, 1) + ' meses', 'considera o churn mês a mês', bPay);
-  k += kpi('Payback do CAC (simples)', isNaN(r.paybackSimples) ? '—' : num(r.paybackSimples, 1) + ' meses', 'CAC ÷ margem mensal por cliente, sem churn');
+  k += kpi('Payback do CAC (simples)', isNaN(r.paybackSimples) ? '—' : num(r.paybackSimples, 1) + ' meses', 'CAC líquido ÷ margem mensal por cliente, sem churn');
   k += kpi(`ROI em ${r.H} meses`, pct(r.roiH), `lucro acumulado ${brl(r.lucroH)}`, bRoi);
   k += kpi('ROI no LTV (vida toda)', pct(r.roiVida), 'retorno total da coorte sobre o custo');
   k += kpi('Novo MRR gerado', brl(r.novoMrr), `ARR: ${brl(r.novoMrr * 12)}`);
@@ -186,7 +204,7 @@ function render() {
 
 function desenharGrafico(r) {
   const W = 640, Hh = 240, m = { l: 64, r: 12, t: 12, b: 28 };
-  const pts = [{ t: 0, acum: -r.custoTotal }, ...r.linhas.slice(0, r.H)];
+  const pts = [{ t: 0, acum: r.acum0 }, ...r.linhas.slice(0, r.H)];
   const ys = pts.map(p => p.acum);
   let min = Math.min(...ys, 0), max = Math.max(...ys, 0);
   if (min === max) max = min + 1;
@@ -205,7 +223,10 @@ function desenharGrafico(r) {
     <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>${be}${xl}</svg>`;
 }
 
-document.querySelectorAll('#form input').forEach(i => i.addEventListener('input', render));
+document.querySelectorAll('#form input').forEach(i => i.addEventListener('input', () => {
+  $('implCampos').hidden = !$('impl').checked;
+  render();
+}));
 render();
 </script>
 </body>
