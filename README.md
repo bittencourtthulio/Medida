@@ -9,6 +9,7 @@ Calculadora simples, em uma única página, para medir a performance de aquisiç
 | Indicador | Como é calculado |
 |---|---|
 | **CAC** | (tráfego + outros custos de aquisição) ÷ novos clientes |
+| **CAC líquido** | CAC − lucro da implantação por cliente (valor × margem da implantação), quando o sistema cobra ativação |
 | **LTV** | ticket × margem variável ÷ churn mensal |
 | **LTV / CAC** | LTV ÷ CAC (meta: 3x ou mais) |
 | **Break-even da coorte** | mês em que o lucro acumulado da coorte cobre o investimento, com churn mês a mês |
@@ -24,6 +25,7 @@ Também traz um gráfico do lucro acumulado, com o ponto de break-even marcado, 
 
 ## Premissas
 
+- Se o sistema cobra **implantação**, o lucro dela (valor × margem) abate o CAC. LTV/CAC, payback, break-even e ROI passam a usar o CAC líquido, e o CAC líquido nunca fica abaixo de zero.
 - O LTV usa a **margem**, não a receita bruta.
 - A simulação acompanha **uma coorte** (os clientes de um mês de investimento) com churn constante.
 - Com churn zero, o LTV aparece como ∞.
