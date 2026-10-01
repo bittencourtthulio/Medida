@@ -41,8 +41,9 @@ window.CALCULADORAS_ARQUIVOS = [
   'previsibilidade-de-entrega',
   'retrabalho-e-escopo',
   'utilizacao-do-time',
-  // Finanças (11)
+  // Finanças (12)
   'burn-multiple',
+  'custo-por-colaborador',
   'dso-e-inadimplencia',
   'financiar-crescimento-com-caixa',
   'margem-bruta-saas',
