@@ -1,2 +1,13 @@
 .vercel
 .env*
+
+# Ferramentas locais instaladas na pasta do app. Não fazem parte da calculadora.
+# A skill nova-calculadora continua versionada.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/nova-calculadora/
+.expx/
+.expxv/
+.grok/
+.opencode/
