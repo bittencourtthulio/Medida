@@ -41,7 +41,7 @@ window.CALCULADORAS_ARQUIVOS = [
   'previsibilidade-de-entrega',
   'retrabalho-e-escopo',
   'utilizacao-do-time',
-  // Finanças (12)
+  // Finanças (13)
   'burn-multiple',
   'custo-por-colaborador',
   'dso-e-inadimplencia',
@@ -53,6 +53,7 @@ window.CALCULADORAS_ARQUIVOS = [
   'receita-por-funcionario',
   'regra-dos-40',
   'runway-e-burn',
+  'tempo-para-aumentar-receita',
   'valuation-por-arr',
   // Retenção e Expansão (10)
   'churn',
