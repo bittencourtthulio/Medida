@@ -494,3 +494,31 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 
 #qBorracha.on { background: var(--ink); color: var(--paper); }
 .q-tela.borracha { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='14' cy='14' r='12' fill='none' stroke='black' stroke-width='3'/><circle cx='14' cy='14' r='12' fill='none' stroke='white' stroke-width='1.5'/></svg>") 14 14, cell; }
+
+/* ---------- modo consultor/apresentação ---------- */
+body.consultor-level #side, body.consultor-level #topAuth, body.consultor-level .bar, body.consultor-level #crumb,
+body.consultor-level #formCard, body.consultor-level .acoes-head, body.consultor-level .back { display: none !important; }
+body.consultor-level #shell { display: block; }
+body.consultor-level #shell .page { max-width: 1280px; margin: 0 auto; padding-bottom: 110px; font-size: 1.2rem; }
+body.consultor-level #shell .grid { grid-template-columns: 1fr; }
+body.consultor-level .head h1 { font-size: clamp(34px, 5vw, 56px); }
+body.consultor-level .head .sub { font-size: 1.2em; }
+body.consultor-level .diag { padding: 36px; }
+body.consultor-level .diag h3 { font-size: clamp(30px, 4.4vw, 44px); }
+body.consultor-level .diag p { font-size: 22px; max-width: 70ch; }
+body.consultor-level .diag ul { font-size: 20px; max-width: 74ch; }
+body.consultor-level .kpis { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+body.consultor-level .kpi { padding: 24px; }
+body.consultor-level .kpi .name { font-size: 15px; }
+body.consultor-level .kpi .val { font-size: 40px; }
+body.consultor-level .kpis .kpi:first-child .val { font-size: 56px; }
+body.consultor-level .kpi .note { font-size: 14px; }
+.consultor-faixa { position: fixed; top: 0; left: 0; right: 0; z-index: 20; text-align: center; padding: 8px 16px; font-size: 14px; font-weight: 700; background: var(--ink); color: var(--paper); }
+.consultor-rodape { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 10px 20px; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line); opacity: .85; transition: opacity 200ms; }
+.consultor-rodape:hover, .consultor-rodape:focus-within { opacity: 1; }
+.consultor-rodape[hidden], .consultor-faixa[hidden] { display: none; }
+.consultor-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.consultor-dica { font-size: 12px; color: var(--mute); }
+#consultorBtn.on { background: var(--ink); color: var(--paper); }
+@media (prefers-reduced-motion: reduce) { .consultor-rodape, body.consultor-level * { transition: none !important; animation: none !important; } }
+@media print { .consultor-faixa, .consultor-rodape { display: none !important; } }
