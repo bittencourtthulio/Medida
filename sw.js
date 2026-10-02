@@ -1,8 +1,8 @@
-// Service Worker — estratégia mista: network-first para navegações, stale-while-revalidate para assets same-origin.
+// Service Worker — network-first para navegações e assets same-origin (cache só como fallback offline).
 
 // Constantes de cache
-const CACHE = 'medida-shell-v1';
-const RUNTIME = 'medida-runtime-v1';
+const CACHE = 'medida-shell-v2';
+const RUNTIME = 'medida-runtime-v2';
 
 // App shell — arquivos críticos pré-cacheados no install
 const SHELL = [
@@ -82,24 +82,14 @@ self.addEventListener('fetch', (event) => {
   // Recursos cross-origin: passthrough sem cache
   if (url.origin !== self.location.origin) return;
 
-  // Same-origin (assets): stale-while-revalidate
+  // Same-origin (assets): rede primeiro, para nunca servir CSS/JS antigo com HTML novo; cache só offline
   event.respondWith(
-    caches.match(request).then((cached) => {
-      // Dispara atualização em background sem bloquear a resposta
-      const networkFetch = fetch(request)
-        .then((response) => {
-          // Atualiza o cache runtime com a versão fresca
-          const clone = response.clone();
-          caches.open(RUNTIME).then((c) => c.put(request, clone));
-          return response;
-        })
-        .catch(() => {
-          // Sem rede e sem cache: deixa o erro subir
-          throw new Error('Network error and no cache available');
-        });
-
-      // Devolve cache imediatamente se houver, senão espera a rede
-      return cached || networkFetch;
-    })
+    fetch(request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(RUNTIME).then((c) => c.put(request, clone));
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
