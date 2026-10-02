@@ -380,4 +380,9 @@
 
   carregarCalculadoras().then(() => { indexar(); navAreas(); Auth.iniciar(u => { usuario = u; rota(); fechaBoot(); }); })
     .catch(e => { fechaBoot(); document.body.insertAdjacentHTML('afterbegin', `<div class="msg bad">${esc(e.message)}</div>`); });
+
+  if (window.Cenarios) {
+    Cenarios.init({ getAtual: () => atual, getValores: () => lerValores(atual, leitor), renderizar });
+    $('cenarioBtn').onclick = () => Cenarios.abrirModal();
+  }
 })();
