@@ -95,7 +95,6 @@
     document.querySelectorAll('#side nav a').forEach(a => a.classList.toggle('on', a.dataset.nav === chave));
   }
   function menu(abrir) { $('side').classList.toggle('open', abrir); $('scrim').style.display = abrir ? 'block' : 'none'; }
-  $('menu').onclick = () => menu(true);
   $('scrim').onclick = () => menu(false);
   $('scrim').style.cssText = 'position:fixed;inset:0;z-index:20;';
   $('scrim').style.display = 'none';
@@ -194,7 +193,7 @@
   function marcaPaleta() { document.querySelectorAll('#pr .pi').forEach((el, i) => el.classList.toggle('on', i === sel)); }
   function abrePaleta() { $('palette').hidden = false; $('pq').value = ''; paleta(''); $('pq').focus(); menu(false); }
   function fechaPaleta() { $('palette').hidden = true; }
-  $('abrirBusca').onclick = $('abrirBusca2').onclick = abrePaleta;
+  $('abrirBusca').onclick = abrePaleta;
   $('palette').onclick = e => { if (e.target === $('palette') || e.target.closest('.pi')) fechaPaleta(); };
   $('pq').oninput = e => paleta(e.target.value);
   $('pq').onkeydown = e => {
@@ -360,6 +359,11 @@
   function fechaBoot() { setTimeout(() => $('boot').classList.add('out'), Math.max(0, 700 - (Date.now() - t0))); }
 
   /* ---------- rotas ---------- */
+  function montaHeader() {
+    const crumb = $('crumb') ? $('crumb').textContent : '';
+    window.initPageHeader({ user: usuario, onSignOut: () => $('sair').click(), onMenu: () => menu(true), onSearch: abrePaleta });
+    $('crumb').textContent = crumb;
+  }
   function rota() {
     const logado = usuario && usuario.nome;
     $('topAuth').hidden = $('authWrap').hidden = !!logado;
@@ -370,6 +374,7 @@
     menu(false);
     if (!logado) { setModo(location.hash === '#cadastro' ? 'cadastro' : 'entrar'); fechaPaleta(); return; }
     $('user').textContent = logado;
+    montaHeader();
 
     const mc = location.hash.match(/^#\/calc\/([\w-]+)/);
     const ma = location.hash.match(/^#\/area\/([\w-]+)/);
