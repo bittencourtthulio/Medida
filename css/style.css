@@ -531,3 +531,5 @@ body.consultor-level .kpi .note { font-size: 14px; }
 #consultorBtn.on { background: var(--ink); color: var(--paper); }
 @media (prefers-reduced-motion: reduce) { .consultor-rodape, body.consultor-level * { transition: none !important; animation: none !important; } }
 @media print { .consultor-faixa, .consultor-rodape { display: none !important; } }
+.cenario-bar { margin: 8px 0 0; padding: 6px 12px; border-radius: 8px; background: var(--ink); color: var(--paper); font-size: 13px; font-weight: 600; display: inline-block; }
+.cenario-bar[hidden], #cenarioLinkBtn[hidden] { display: none; }
