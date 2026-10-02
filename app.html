@@ -122,8 +122,8 @@
     <div class="solo-print print-head"><span class="brand"><span class="logo"></span>Medida</span><span id="pData"></span></div>
     <a class="back" id="back" href="#/">← Todas as calculadoras</a>
     <div class="head">
-      <div class="t"><h1 id="cNome"></h1><p class="sub" id="cDesc"></p></div>
-      <div class="acoes-head sem-print"><button class="btn ghost" id="promptBtn" type="button">✨ Prompt para IA</button><button class="btn ghost" id="link" type="button">🔗 Copiar link</button><button class="btn" id="pdf" type="button">⬇ Salvar PDF</button></div>
+      <div class="t"><h1 id="cNome"></h1><p class="sub" id="cDesc"></p><p class="cenario-bar" id="cenarioBar" hidden></p></div>
+      <div class="acoes-head sem-print"><button class="btn ghost" id="promptBtn" type="button">✨ Prompt para IA</button><button class="btn ghost" id="link" type="button">🔗 Copiar link</button><button class="btn ghost" id="cenarioLinkBtn" type="button" hidden>🔗 Compartilhar "Nome"</button><button class="btn" id="pdf" type="button">⬇ Salvar PDF</button></div>
     </div>
     <div class="grid">
       <section class="card" id="formCard"><h2>Premissas</h2><div id="form"></div></section>
@@ -170,5 +170,6 @@
 <script type="module" src="js/sala.js"></script>
 <script type="module" src="js/quadro-sala.js"></script>
 <script type="module" src="js/app.js"></script>
+<script src="js/compartilhar.js"></script>
 </body>
 </html>

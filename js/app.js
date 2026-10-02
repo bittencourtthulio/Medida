@@ -243,16 +243,30 @@
       const n = Number(x);
       if (x !== '' && isFinite(n) && n >= 0) el.value = f.max != null ? Math.min(n, f.max) : n;
     });
+    if (window.Compartilhar) {
+      const nome = Compartilhar.parseCenarioNome(location.hash);
+      if (nome) {
+        const bar = $('cenarioBar');
+        if (bar) { bar.hidden = false; bar.textContent = 'Cenário compartilhado: ' + nome; }
+      }
+    }
   }
 
   function linkDaCalculadora() {
+    if (window.Compartilhar) {
+      return Compartilhar.gerarLink({ calc: atual, valores: lerValores(atual, leitor), cenarioNome: null });
+    }
     const p = new URLSearchParams();
     atual.campos.forEach(f => { const el = $('c_' + f.id); p.set(f.id, f.tipo === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
     return `${location.origin}${location.pathname}#/calc/${atual.id}?${p}`;
   }
 
   $('link').onclick = async () => {
-    const url = linkDaCalculadora(), b = $('link');
+    const cenarioNome = window.Compartilhar ? Compartilhar.cenarioNome(atual.id) : null;
+    const url = window.Compartilhar
+      ? Compartilhar.gerarLink({ calc: atual, valores: lerValores(atual, leitor), cenarioNome })
+      : linkDaCalculadora();
+    const b = $('link');
     try { await navigator.clipboard.writeText(url); b.textContent = '✓ Link copiado'; }
     catch { history.replaceState(null, '', url.slice(location.origin.length)); b.textContent = 'Copie o link na barra de endereço'; }
     clearTimeout(b.t); b.t = setTimeout(() => { b.textContent = '🔗 Copiar link'; }, 2200);
@@ -290,6 +304,7 @@
       const txt = f.tipo === 'checkbox' ? (x ? 'Sim' : 'Não') : `${f.prefixo ? f.prefixo + ' ' : ''}${fmt.num(x, 2)}${f.sufixo ? ' ' + f.sufixo : ''}`;
       return `<li><span>${esc(f.rotulo)}</span><b>${esc(txt)}</b></li>`;
     }).join('');
+    if (window.Compartilhar) Compartilhar.atualizarBotao(atual.id);
   }
 
   /* ---------- prompt pronto para colar na IA do usuário ---------- */
