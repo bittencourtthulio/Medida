@@ -229,6 +229,7 @@
     aplicaLink(c);
     renderizar();
     revelar();
+    if (window.Apresentacao?.ativo) Apresentacao.aplicar();
   }
 
   /* ---------- link compartilhável: #/calc/<id>?campo=valor&... (os números vão só na URL, nada é guardado) ---------- */
@@ -381,8 +382,12 @@
   carregarCalculadoras().then(() => { indexar(); navAreas(); Auth.iniciar(u => { usuario = u; rota(); fechaBoot(); }); })
     .catch(e => { fechaBoot(); document.body.insertAdjacentHTML('afterbegin', `<div class="msg bad">${esc(e.message)}</div>`); });
 
-  if (window.Cenarios) {
+if (window.Cenarios) {
     Cenarios.init({ getAtual: () => atual, getValores: () => lerValores(atual, leitor), renderizar });
     $('cenarioBtn').onclick = () => Cenarios.abrirModal();
+  }
+  if (window.Apresentacao) {
+    Apresentacao.init({ getAtual: () => atual, getCalculadoras: () => CALCULADORAS, getAreaDe: areaDe });
+    $('consultorBtn').onclick = () => Apresentacao.toggle();
   }
 })();
