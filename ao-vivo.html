@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Quadro ao vivo</title>
+<meta name="theme-color" content="#0b0b0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Medida">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
 <style>
   body { margin: 0; }
@@ -30,5 +36,6 @@
   else if (!Sala.disponivel) msg('Sala ao vivo não configurada.');
   else Sala.ouvirQuadro(id, est => Quadro.ver(est), t => msg(t));
 </script>
+<script src="/js/pwa.js" defer></script>
 </body>
 </html>
