@@ -11,3 +11,5 @@
 .expxv/
 .grok/
 .opencode/
+# indice derivado do memox: reconstruivel, nao versionado
+.expx/memoria/
