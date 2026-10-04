@@ -13,3 +13,7 @@
 .opencode/
 # indice derivado do memox: reconstruivel, nao versionado
 .expx/memoria/
+
+docs/eventos/
+
+.expx/estado.json
