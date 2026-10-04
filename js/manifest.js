@@ -32,12 +32,13 @@ window.CALCULADORAS_ARQUIVOS = [
   'motivos-de-perda',
   'precificacao',
   'velocidade-de-vendas',
-  // Entrega e Operação (8)
+  // Entrega e Operação (9)
   'capacidade-de-entrega',
   'custo-de-implantacao',
   'custo-do-atraso',
   'lead-time-e-wip',
   'margem-por-projeto',
+  'nivel-de-demanda-do-suporte',
   'previsibilidade-de-entrega',
   'retrabalho-e-escopo',
   'utilizacao-do-time',

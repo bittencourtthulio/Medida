@@ -44,20 +44,38 @@ A `apiKey` do Firebase é pública por desenho; quem protege é a lista de domí
 
 Peça ao Claude Code ("cria uma calculadora de X"): a skill `nova-calculadora` segue o contrato, registra em `js/manifest.js` e valida. Manualmente: crie `js/calculadoras/<id>.js`, adicione `'<id>'` ao manifesto e rode `node scripts/validar.mjs`. O contrato completo está em `.claude/skills/nova-calculadora/SKILL.md`.
 
-## Calculadoras incluídas (70, em 8 áreas do DNA EXPX)
+## Calculadoras incluídas (73, em 8 áreas do DNA EXPX)
 
 | Área | Calculadoras |
 |---|---|
 | Posicionamento (7) | Concentração de receita por nicho · Desconto e percepção de valor · Múltiplo de valor para o cliente · Prêmio de preço sobre o mercado · Teste das cinco marcas · Subir o preço compensa? · Contra quem você perde? |
 | Aquisição (12) | CAC por canal · Custo por lead qualificado · Dependência de uma origem de clientes · Funil de tráfego pago · Magic number · Parcerias e afiliados · Payback do CAC por cliente · Cobertura de pipeline · Custo da prospecção outbound · ROI de conteúdo · ROI de aquisição SaaS · Teste A/B de conversão |
 | Conversão (9) | Capacidade comercial: quantos vendedores · Custo do time comercial e comissão · Forecast ponderado do pipeline · Impacto do desconto no volume · Meta de vendas e leads necessários · Mix de planos: qual plano sustenta a receita · Motivos de perda de negócios · Preço do plano e margem · Velocidade de vendas |
-| Entrega e Operação (8) | Capacidade de entrega · Custo de implantação · Custo do atraso · Lead time e trabalho em andamento · Margem por projeto · Previsibilidade de entrega · Retrabalho e escopo aberto · Utilização do time |
-| Finanças (12) | Burn multiple · Custo por colaborador · DSO e inadimplência · Financiar crescimento com caixa · Margem bruta do SaaS · Plano anual contra mensal · Ponto de equilíbrio · Projeção de MRR · Receita por funcionário · Regra dos 40% · Runway e burn · Valuation por múltiplo de ARR |
+| Entrega e Operação (9) | Capacidade de entrega · Custo de implantação · Custo do atraso · Lead time e trabalho em andamento · Margem por projeto · Nível de demanda do suporte · Previsibilidade de entrega · Retrabalho e escopo aberto · Utilização do time |
+| Finanças (13) | Burn multiple · Custo por colaborador · DSO e inadimplência · Financiar crescimento com caixa · Margem bruta do SaaS · Plano anual contra mensal · Ponto de equilíbrio · Projeção de MRR · Receita por funcionário · Regra dos 40% · Runway e burn · Tempo para aumentar receita · Valuation por múltiplo de ARR |
 | Retenção e Expansão (10) | Churn e retenção · Concentração de clientes · Custo do suporte por cliente · Expansão por upsell · Saúde da base · NPS e saúde da base · NRR e GRR · SaaS Quick Ratio · Renovação de contratos · Retenção por coorte |
 | Produtos e Inovação (6) | Adoção de funcionalidade e churn · Investimento em produto novo · Priorização RICE · Retorno de funcionalidade · Serviço vs produto · Tamanho de mercado (TAM, SAM, SOM) |
 | Tecnologia e IA (7) | Construir ou comprar tecnologia · Custo de IA por cliente · IA no atendimento se paga? · Custo da dívida técnica · Infraestrutura por cliente · ROI de automação e agentes de IA · Custo da indisponibilidade |
 
 Cada uma devolve um veredito, indicadores e um dashboard (gráficos e tabelas). Nenhuma usa benchmark inventado: limiares são matemática ou "regra de bolso" dita como tal no veredito. Preços de IA e nuvem vêm sempre de campos preenchidos pelo usuário.
+
+## Nível de demanda do suporte
+
+Em **Entrega e Operação**, acesse `app.html#/calc/nivel-de-demanda-do-suporte`. Informe colaboradores, WIP simultâneo por atendente, média de tickets por dia, duração média do ticket em minutos e horas líquidas de atendimento por pessoa por dia.
+
+A duração mede quanto tempo o ticket ocupa uma vaga de WIP, incluindo esperas. O modelo pressupõe que o atendente sustenta o paralelismo informado sem aumentar essa duração; para trabalho sequencial, use WIP 1. Não use minutos de esforço ativo como duração de tickets paralelos.
+
+- Capacidade por pessoa/dia = WIP × horas × 60 ÷ duração média.
+- Ocupação = tickets/dia ÷ capacidade total; pode ultrapassar 100%.
+- Média por atendente = tickets/dia ÷ colaboradores (demanda, não produção medida).
+- Equipe mínima = demanda ÷ capacidade individual, arredondada para cima.
+- Contratações = máximo entre zero e equipe mínima menos colaboradores atuais.
+
+Aos 100% o time está sem folga; acima disso falta capacidade. A recomendação cobre a média informada, sem reserva para picos, ausências ou SLA. Equipe zero permite dimensionar contratações, com ocupação e média indisponíveis. Demanda zero é válida; colaboradores e WIP fracionários ou denominadores inválidos não geram recomendação.
+
+Exemplo: 5 colaboradores, WIP 2, 150 tickets/dia, 30 minutos e 6 horas/dia resultam em **125% de ocupação**, **30 tickets por atendente/dia**, **7 pessoas necessárias** e **2 contratações**.
+
+Testes: `node --test scripts/testar-demanda-suporte.mjs`. Validação do catálogo: `node scripts/validar.mjs`.
 
 ## PDF
 

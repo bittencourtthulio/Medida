@@ -1,0 +1,5 @@
+# Lacunas
+
+- **WIP:** NÃO DOCUMENTADO se o limite é por atendente ou para a equipe, nem se representa simultaneidade sustentável de atendimentos. Procurado na solicitação do usuário e em `js/calculadoras/lead-time-e-wip.js:8-30`; a referência existente trata itens em andamento, sem definir o modelo novo.
+- **Unidades e significado do tempo:** NÃO DOCUMENTADO o período da quantidade de tickets, a unidade do tempo médio, se esse tempo é esforço ativo ou duração incluindo esperas, e se a carga diária é individual ou total. Procurado na solicitação do usuário, `js/calculadoras/utilizacao-do-time.js:8-21` e `js/calculadoras/custo-do-suporte-por-cliente.js:8-20`; as referências existentes são mensais e não definem a feature diária.
+- **Equipe sem colaboradores:** NÃO DOCUMENTADO se deve ser um cenário válido para estimar contratação ou entrada incompleta. Procurado na solicitação do usuário, `js/core.js:28-37` e `js/calculadoras/utilizacao-do-time.js:17-19`; o core permite zero e a calculadora existente exige capacidade positiva, sem estabelecer a regra da nova feature.
