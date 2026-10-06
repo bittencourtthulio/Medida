@@ -28,7 +28,9 @@ Em `#/quadro` (menu lateral): caixas, notas, círculos e textos que se arrastam 
 
 O quadro aceita várias páginas: use **Nova página**, as setas ou o seletor para navegar. Cada página conserva seus desenhos, zoom e histórico de desfazer. **Limpar página** afeta somente a página aberta. O quadro antigo é preservado como a primeira página, e todas as páginas são salvas automaticamente neste navegador; o indicador informa se o armazenamento falhar.
 
-**Baixar página JPEG** exporta a página atual; **Baixar todas (ZIP)** gera um arquivo com um JPEG numerado por página. As imagens têm fundo branco, preservam as cores e incluem textos, formas, setas e traços fora da área visível. A exportação é local, em `js/quadro-exportar.js`. **Só quadro** esconde a interface; Esc restaura a tela e Page Up / Page Down navegam entre páginas existentes. O tablet e a turma acompanham a página aberta pelo computador.
+Uma única barra acima do quadro reúne os controles em ícones com tooltips: páginas, seleção, caneta, borracha, cores, inserção, edição, zoom, exportação, tablet e modo foco. **Inserir** contém formas e modelos; **Mais opções** contém **Limpar página**. Em janelas estreitas, a barra permite rolagem horizontal.
+
+No menu **Exportar**, **Página atual (JPEG)** exporta a página aberta; **Todas as páginas (ZIP)** gera um arquivo com um JPEG numerado por página. As imagens têm fundo branco, preservam as cores e incluem textos, formas, setas e traços fora da área visível. A exportação é local, em `js/quadro-exportar.js`. **Só quadro** esconde a interface; Esc restaura a tela e Page Up / Page Down navegam entre páginas existentes. O tablet e a turma acompanham a página aberta pelo computador.
 
 Regressão de páginas, tablet e exportação: `node scripts/testar-quadro.mjs` (requer Playwright e Chromium). Para usar instalações existentes, configure `PLAYWRIGHT_MODULE` com o caminho do pacote e `CHROME_PATH` com o executável do Chrome. O teste simula a sala sem gravar no Firebase.
 

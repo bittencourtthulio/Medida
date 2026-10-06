@@ -27,7 +27,10 @@ async function iniciar() {
     Sala.publicar(sessao, Quadro.estado());
     Sala.publicarVista(sessao, Quadro.vista());
     msg(''); $('qsCorpo').hidden = false;
-    $('qSalaBtn').textContent = '📱 Ao vivo';
+    $('qSalaRotulo').textContent = 'Ao vivo';
+    $('qSalaBtn').title = 'Tablet e turma · Ao vivo';
+    $('qSalaBtn').setAttribute('aria-label', 'Tablet e turma · Ao vivo');
+    $('qSalaBtn').classList.add('ao-vivo');
   })();
   await abrindo; abrindo = null;
 }
@@ -39,7 +42,10 @@ async function encerrar() {
   await Sala.encerrar(sessao);
   sessao = parar = null;
   $('qsCorpo').hidden = true; $('qSala').hidden = true;
-  $('qSalaBtn').textContent = '📱 Tablet e turma';
+  $('qSalaRotulo').textContent = 'Tablet e turma';
+  $('qSalaBtn').title = 'Tablet e turma';
+  $('qSalaBtn').setAttribute('aria-label', 'Tablet e turma');
+  $('qSalaBtn').classList.remove('ao-vivo');
 }
 
 $('qSalaBtn').onclick = () => { $('qSala').hidden = !$('qSala').hidden; if (!$('qSala').hidden) iniciar(); };

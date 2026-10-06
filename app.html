@@ -82,28 +82,21 @@
 
   <!-- quadro branco -->
   <section id="quadro" hidden>
+    <div class="q-comandos" aria-label="Controles do quadro">
     <div class="q-paginas">
       <div class="q-paginacao" role="group" aria-label="Páginas do quadro">
-        <button class="btn ghost sm" type="button" id="qAnterior" aria-label="Página anterior">←</button>
+        <button class="q-btn q-icon" type="button" id="qAnterior" aria-label="Página anterior" title="Página anterior (Page Up)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg><span>Página anterior</span></button>
         <select id="qPagina" aria-label="Página atual"></select>
-        <button class="btn ghost sm" type="button" id="qProxima" aria-label="Próxima página">→</button>
-        <button class="btn ghost sm" type="button" id="qNovaPagina">+ Nova página</button>
+        <button class="q-btn q-icon" type="button" id="qProxima" aria-label="Próxima página" title="Próxima página (Page Down)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 7 5 5-5 5"/></svg><span>Próxima página</span></button>
+        <button class="q-btn q-icon q-nova" type="button" id="qNovaPagina" title="Nova página" aria-label="Nova página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nova página</span></button>
       </div>
-      <span id="qSalvo" class="q-salvo" role="status">Salvo neste navegador</span>
-      <div class="q-paginacao" role="group" aria-label="Exportar páginas">
-        <button class="btn ghost sm" type="button" id="qExportarPagina">Baixar página JPEG</button>
-        <button class="btn ghost sm" type="button" id="qExportarTudo">Baixar todas (ZIP)</button>
-      </div>
-      <span id="qExportStatus" class="q-salvo" role="status"></span>
     </div>
-    <div class="q-barra">
-      <button class="btn ghost sm" type="button" data-add="caixa">+ Caixa</button>
-      <button class="btn ghost sm" type="button" data-add="nota">+ Nota</button>
-      <button class="btn ghost sm" type="button" data-add="circulo">+ Círculo</button>
-      <button class="btn ghost sm" type="button" data-add="losango">+ Losango</button>
-      <button class="btn ghost sm" type="button" data-add="triangulo">+ Triângulo</button>
-      <button class="btn ghost sm" type="button" data-add="texto">+ Texto</button>
-      <button class="btn ghost sm" type="button" id="qCaneta" title="Desenhar à mão livre">✎ Caneta</button>
+    <div class="q-barra" aria-label="Ferramentas de desenho">
+      <div class="q-grupo" role="group" aria-label="Ferramenta ativa">
+        <button class="q-btn q-icon on" type="button" id="qSelecionar" title="Selecionar e mover" aria-label="Selecionar e mover" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 14 10-7 1-3 7Z"/></svg><span>Selecionar</span></button>
+        <button class="q-btn q-icon" type="button" id="qCaneta" title="Caneta · desenhar à mão livre" aria-label="Caneta" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M13 6l5 5"/></svg><span>Caneta</span></button>
+        <button class="q-btn q-icon" type="button" id="qBorracha" title="Borracha · apagar parte de um traço" aria-label="Borracha" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 3 7 7-11 11H6l-4-4Z M7 12l7 7M10 21h12"/></svg><span>Borracha</span></button>
+      </div>
       <div class="q-cores" role="group" aria-label="Cor da caneta">
         <button class="q-cor" type="button" data-cor="inherit" style="--cor: var(--ink)" aria-label="Cor padrão do tema" title="Caneta padrão (preta no tema claro, branca no escuro)" aria-pressed="true"></button>
         <button class="q-cor" type="button" data-cor="#2563eb" style="--cor: #2563eb" aria-label="Azul" title="Caneta azul" aria-pressed="false"></button>
@@ -112,15 +105,55 @@
         <button class="q-cor" type="button" data-cor="#c2410c" style="--cor: #c2410c" aria-label="Laranja" title="Caneta laranja" aria-pressed="false"></button>
         <button class="q-cor" type="button" data-cor="#9333ea" style="--cor: #9333ea" aria-label="Roxo" title="Caneta roxa" aria-pressed="false"></button>
       </div>
-      <button class="btn ghost sm" type="button" id="qBorracha" title="Apagar só um pedaço do desenho">⌫ Borracha</button>
-      <select id="qModelo" aria-label="Inserir modelo"><option value="">Modelos…</option><option value="funil">Funil de vendas</option><option value="unit">Unit economics</option><option value="retencao">Receita recorrente</option></select>
-      <span class="q-sp"></span>
-      <button class="btn ghost sm" type="button" id="qFoco" title="Mostrar apenas a área de escrita. Pressione Esc para voltar." aria-pressed="false" aria-controls="qTela">⛶ Só quadro</button>
-      <button class="btn sm" type="button" id="qSalaBtn">📱 Tablet e turma</button>
-      <button class="btn ghost sm" type="button" id="qDesfazer">Desfazer</button>
-      <button class="btn ghost sm" type="button" id="qApagar">Apagar</button>
-      <button class="btn ghost sm" type="button" id="qLimpar">Limpar página</button>
-      <span class="q-zoom"><button class="btn ghost sm" type="button" id="qMenos" aria-label="Diminuir">−</button><b id="qZoom">100%</b><button class="btn ghost sm" type="button" id="qMais" aria-label="Aumentar">+</button></span>
+      <div class="q-grupo" role="group" aria-label="Inserir no quadro">
+        <details class="q-menu" id="qInserirMenu">
+          <summary class="q-btn q-icon" aria-label="Inserir formas e modelos" title="Inserir formas e modelos"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="11" height="11" rx="2"/><circle cx="16.5" cy="16.5" r="4.5"/></svg><span>Inserir</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary>
+          <div class="q-menu-painel q-inserir-painel">
+            <p class="q-menu-titulo">Formas e conteúdo</p>
+            <div class="q-formas">
+              <button type="button" data-add="caixa"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/></svg>Caixa</button>
+              <button type="button" data-add="circulo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>Círculo</button>
+              <button type="button" data-add="losango"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 10 10-10 10L2 12Z"/></svg>Losango</button>
+              <button type="button" data-add="triangulo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 10 18H2Z"/></svg>Triângulo</button>
+              <button type="button" data-add="nota"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v12l-5 6H4ZM15 21v-6h5"/></svg>Nota</button>
+              <button type="button" data-add="texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6V3h16v3M12 3v18M8 21h8"/></svg>Texto</button>
+            </div>
+            <label class="q-menu-titulo" for="qModelo">Modelos prontos</label>
+            <select id="qModelo" aria-label="Inserir modelo"><option value="">Escolher modelo…</option><option value="funil">Funil de vendas</option><option value="unit">Unit economics</option><option value="retencao">Receita recorrente</option></select>
+          </div>
+        </details>
+        <button class="q-btn q-icon" type="button" data-add="texto" title="Inserir texto" aria-label="Inserir texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6V3h16v3M12 3v18M8 21h8"/></svg><span>Texto</span></button>
+      </div>
+      <div class="q-grupo q-edicao" role="group" aria-label="Editar página">
+        <button class="q-btn q-icon" type="button" id="qDesfazer" title="Desfazer (Ctrl/⌘ Z)" aria-label="Desfazer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-5 5 5 5M3 9h11a7 7 0 0 1 0 14" transform="translate(0 -2)"/></svg><span>Desfazer</span></button>
+        <button class="q-btn q-icon" type="button" id="qApagar" title="Apagar seleção (Delete)" aria-label="Apagar seleção"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>Apagar seleção</span></button>
+        <details class="q-menu" id="qMaisMenu">
+          <summary class="q-btn q-icon" aria-label="Mais opções" title="Mais opções"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>Mais opções</span></summary>
+          <div class="q-menu-painel q-menu-direita">
+            <p class="q-menu-titulo">Página atual</p>
+            <button type="button" id="qLimpar">Limpar página…</button>
+            <p class="q-menu-ajuda">As outras páginas são mantidas.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+      <div class="q-zoom" role="group" aria-label="Zoom do quadro">
+        <button class="q-btn q-icon" type="button" id="qMenos" aria-label="Diminuir zoom" title="Diminuir zoom">−</button>
+        <b id="qZoom">100%</b>
+        <button class="q-btn q-icon" type="button" id="qMais" aria-label="Aumentar zoom" title="Aumentar zoom">+</button>
+      </div>
+      <div class="q-documento" role="group" aria-label="Opções do quadro">
+        <details class="q-menu" id="qExportMenu">
+          <summary class="q-btn q-icon" aria-label="Exportar páginas" title="Exportar páginas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6"/></svg><span>Exportar</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary>
+          <div class="q-menu-painel q-menu-direita">
+            <p class="q-menu-titulo">Salvar imagens</p>
+            <button type="button" id="qExportarPagina">Página atual <small>JPEG</small></button>
+            <button type="button" id="qExportarTudo">Todas as páginas <small>ZIP com JPEGs</small></button>
+          </div>
+        </details>
+        <button class="q-btn q-icon q-compartilhar" type="button" id="qSalaBtn" title="Tablet e turma" aria-label="Tablet e turma"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M10 18h4"/></svg><span id="qSalaRotulo">Tablet e turma</span></button>
+        <button class="q-btn q-icon" type="button" id="qFoco" title="Só quadro · Esc para voltar" aria-label="Só quadro" aria-pressed="false" aria-controls="qTela"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span>Só quadro</span></button>
+      </div>
     </div>
     <div class="q-sala" id="qSala" hidden role="dialog" aria-label="Tablet e turma">
       <button class="btn ghost sm q-x" type="button" id="qsFechar" aria-label="Fechar">✕</button>
@@ -139,7 +172,11 @@
     <div class="q-tela" id="qTela" tabindex="-1" aria-label="Área de escrita do quadro. Pressione Esc para sair do modo só quadro.">
       <div class="q-grade" id="qGrade"></div>
       <div class="q-mundo" id="qMundo"><svg id="qSetas" class="q-setas" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg><svg id="qTinta" class="q-tinta" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg></div>
-      <p class="q-dica">Arraste para mover · duplo clique edita · puxe a bolinha até outro elemento para ligar · puxe o canto para redimensionar · Delete apaga · Ctrl+rolagem dá zoom</p>
+    </div>
+    <div class="q-rodape">
+      <span id="qSalvo" class="q-salvo" role="status">Salvo neste navegador</span>
+      <span id="qExportStatus" class="q-salvo" role="status"></span>
+      <span class="q-dica">Arraste para mover · Duplo clique para editar</span>
     </div>
   </section>
 

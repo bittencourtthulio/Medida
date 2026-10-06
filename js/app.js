@@ -382,7 +382,7 @@
     const c = mc && porId(mc[1]);
     const a = ma && AREAS.find(x => x.slug === ma[1]);
     const q = /^#\/quadro/.test(location.hash);
-    document.querySelector('main.page').classList.toggle('larga', q);
+    document.querySelector('#shell main.page').classList.toggle('larga', q);
     let crumb = 'Início';
     if (q) {
       $('quadro').hidden = false; Quadro.abrir(); if (window.QuadroSala) QuadroSala.retomar(); marcaNav('quadro'); crumb = 'Quadro branco';

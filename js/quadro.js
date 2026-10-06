@@ -50,7 +50,11 @@
     if ($('qSalvo')) $('qSalvo').textContent = 'Salvando…';
     salvaT = setTimeout(persistir, 250);
   }
-  function foto() { desfazer.push(JSON.stringify(est)); if (desfazer.length > 50) desfazer.shift(); }
+  function foto() { desfazer.push(JSON.stringify(est)); if (desfazer.length > 50) desfazer.shift(); atualizaAcoes(); }
+  function atualizaAcoes() {
+    if ($('qDesfazer')) $('qDesfazer').disabled = !desfazer.length;
+    if ($('qApagar')) $('qApagar').disabled = !sel;
+  }
   function volta() {
     if (!desfazer.length) return;
     est = JSON.parse(desfazer.pop()); sel = null; desenhar(); salvar();
@@ -60,7 +64,7 @@
   function controlesPaginas() {
     if (!$('qPagina')) return;
     const i = paginas.findIndex(p => p.id === est.id);
-    $('qPagina').replaceChildren(...paginas.map((p, n) => new Option(`Página ${n + 1} de ${paginas.length}`, p.id, false, p.id === est.id)));
+    $('qPagina').replaceChildren(...paginas.map((p, n) => new Option(`Pág. ${n + 1} / ${paginas.length}`, p.id, false, p.id === est.id)));
     $('qAnterior').disabled = i <= 0;
     $('qProxima').disabled = i >= paginas.length - 1;
   }
@@ -237,6 +241,7 @@
   }
 
   function setas() {
+    atualizaAcoes();
     const svg = $('qSetas');
     const linhas = est.setas.map(s => {
       const A = est.nos.find(n => n.id === s.a), B = est.nos.find(n => n.id === s.b);
@@ -411,6 +416,10 @@
 
   function aoTeclar(ev) {
     if ($('quadro').hidden) return;
+    const menuAberto = $('quadro').querySelector('.q-menu[open]');
+    if (ev.key === 'Escape' && menuAberto) {
+      ev.preventDefault(); menuAberto.open = false; menuAberto.querySelector('summary').focus(); return;
+    }
     if (ev.key === 'Escape' && document.body.classList.contains('q-foco')) {
       ev.preventDefault(); foco(false); return;
     }
@@ -440,6 +449,7 @@
     document.body.classList.toggle('q-foco', ativo);
     $('qFoco').setAttribute('aria-pressed', String(ativo));
     if (ativo) {
+      $('quadro').querySelectorAll('.q-menu').forEach(m => { m.open = false; });
       $('qSala').hidden = true;
       $('qTela').focus({ preventScroll: true });
     } else if (devolverFoco) $('qFoco').focus({ preventScroll: true });
@@ -463,15 +473,33 @@
     $('qExportarTudo').onclick = () => exportar(true);
     addEventListener('pagehide', () => { encerraEdicao(); persistir(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) { encerraEdicao(); persistir(); } });
-    addEventListener('resize', () => { if (!$('quadro').hidden) aplicaVista(); });
-    $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => adiciona(b.dataset.add); });
-    $('qModelo').onchange = e => { modelo(e.target.value); e.target.value = ''; };
+    new ResizeObserver(() => { if (!$('quadro').hidden) aplicaVista(); }).observe(tela);
+    const menus = $('quadro').querySelectorAll('.q-menu');
+    const fechaMenus = () => menus.forEach(m => { m.open = false; });
+    const posicionaMenu = m => {
+      const r = m.querySelector('summary').getBoundingClientRect(), painel = m.querySelector('.q-menu-painel');
+      const w = Math.min(240, innerWidth - 24);
+      painel.style.setProperty('--q-menu-x', Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px');
+      painel.style.setProperty('--q-menu-y', r.bottom + 8 + 'px');
+    };
+    menus.forEach(m => {
+      m.addEventListener('toggle', () => { if (m.open) { menus.forEach(outro => { if (outro !== m) outro.open = false; }); posicionaMenu(m); } });
+      m.addEventListener('click', e => { if (e.target.closest('button')) m.open = false; });
+    });
+    document.addEventListener('pointerdown', e => { if (!e.target.closest('#quadro .q-menu')) fechaMenus(); });
+    $('quadro').querySelector('.q-comandos').addEventListener('scroll', () => menus.forEach(m => { if (m.open) posicionaMenu(m); }));
+    addEventListener('resize', fechaMenus);
+    $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => { modo('selecionar'); adiciona(b.dataset.add); }; });
+    $('qModelo').onchange = e => { modo('selecionar'); modelo(e.target.value); e.target.value = ''; fechaMenus(); };
     const modo = qual => {
-      caneta = qual === 'caneta' ? !caneta : false; borracha = qual === 'borracha' ? !borracha : false;
-      $('qCaneta').classList.toggle('on', caneta); $('qBorracha').classList.toggle('on', borracha);
+      caneta = qual === 'caneta'; borracha = qual === 'borracha';
+      [['qSelecionar', !caneta && !borracha], ['qCaneta', caneta], ['qBorracha', borracha]].forEach(([id, ativo]) => {
+        $(id).classList.toggle('on', ativo); $(id).setAttribute('aria-pressed', String(ativo));
+      });
       tela.classList.toggle('caneta', caneta); tela.classList.toggle('borracha', borracha);
     };
     $('qCaneta').onclick = () => modo('caneta');
+    $('qSelecionar').onclick = () => modo('selecionar');
     const cores = $('quadro').querySelectorAll('[data-cor]');
     cores.forEach(b => { b.onclick = () => {
       corCaneta = b.dataset.cor;

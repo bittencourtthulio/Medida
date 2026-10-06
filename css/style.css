@@ -430,18 +430,51 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .acoes-head { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* quadro branco */
-.q-paginas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 10px; }
-.q-paginacao { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.q-paginacao select { font: inherit; font-size: 13px; padding: 6px 12px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); }
+.q-comandos { display: flex; flex: 0 0 auto; width: 100%; min-width: 0; align-items: center; gap: 10px; padding: 7px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); overflow-x: auto; scrollbar-width: thin; }
+.q-paginas, .q-paginacao, .q-documento, .q-grupo { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+.q-paginas { padding-right: 10px; border-right: 1px solid var(--line); }
+.q-documento { padding-left: 10px; border-left: 1px solid var(--line); }
+.q-paginacao select { width: 90px; font: inherit; font-size: 12px; font-weight: 600; padding: 6px 2px; border: 0; border-radius: 6px; background: var(--paper); color: var(--ink); cursor: pointer; }
+#quadro .q-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--ink); font: 500 12px/1 var(--display); cursor: pointer; white-space: nowrap; list-style: none; }
+#quadro .q-btn:hover:not(:disabled), #quadro .q-menu[open] > summary { background: var(--soft); border-color: var(--line); }
+#quadro .q-btn:disabled { opacity: .3; cursor: default; }
+#quadro .q-btn.on { background: var(--ink); color: var(--paper); }
+#quadro .q-btn.q-icon { width: 32px; flex: 0 0 32px; padding: 0; }
+.q-icon > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.q-icon > svg ~ svg { display: none; }
+.q-comandos svg { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+#qSalaBtn.ao-vivo { position: relative; }
+#qSalaBtn.ao-vivo::after { content: ''; position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px var(--paper); }
+.q-menu > summary::-webkit-details-marker { display: none; }
+.q-menu-painel { position: fixed; left: var(--q-menu-x, 12px); top: var(--q-menu-y, 80px); z-index: 60; width: 240px; max-width: calc(100vw - 24px); max-height: calc(100dvh - var(--q-menu-y, 80px) - 12px); overflow-y: auto; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); box-shadow: 0 12px 36px #0002; }
+.q-menu-titulo { display: block; margin: 4px 8px 8px; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.q-menu-painel button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 36px; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: 500 12px var(--display); text-align: left; cursor: pointer; }
+.q-menu-painel button:hover { background: var(--soft); }
+.q-menu-painel button:disabled { opacity: .45; cursor: wait; }
+.q-menu-painel small { margin-left: auto; color: var(--mute); font-size: 10px; }
+.q-menu-ajuda { margin: 4px 8px; color: var(--mute); font-size: 11px; }
+.q-formas { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
 .q-salvo { font-size: 12px; color: var(--mute); }
-#qSalvo { flex: 1; }
+.q-rodape { display: flex; flex: 0 0 auto; align-items: center; gap: 16px; padding: 9px 3px 0; }
+#qSalvo { font-size: 10px; }
+#qExportStatus { font-size: 10px; }
+#qExportStatus:empty { display: none; }
+.q-rodape .q-dica { position: static; margin: 0 0 0 auto; font-size: 10px; }
 .q-export-medida { position: fixed; left: -100000px; top: 0; visibility: hidden; pointer-events: none; }
-#shell main.page.larga { max-width: none; padding: 16px 16px 16px; }
-.q-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
-.q-barra select { font: inherit; font-size: 13px; padding: 6px 12px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); }
-.q-sp { flex: 1; }
-.q-zoom { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
-.q-zoom b { min-width: 42px; text-align: center; font-weight: 600; }
+#shell:has(#quadro:not([hidden])) > .main { display: flex; flex-direction: column; height: 100dvh; }
+#shell main.page.larga { display: flex; flex: 1; flex-direction: column; width: 100%; min-height: 0; max-width: none; margin: 0; padding: 12px; }
+#quadro:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+#quadro > .q-tela { flex: 1; min-height: 0; height: auto; border-width: 1px; border-radius: 12px; }
+.q-barra { display: flex; flex: 1 0 auto; align-items: center; gap: 10px; }
+.q-grupo + .q-grupo, .q-edicao { border-left: 1px solid var(--line); padding-left: 10px; }
+.q-barra select { width: 100%; font: inherit; font-size: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
+#quadro .q-cores { gap: 1px; padding: 0; border: 0; }
+#quadro .q-cor { width: 24px; height: 28px; border-radius: 6px; }
+#quadro .q-cor::before { width: 14px; height: 14px; }
+.q-zoom { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0; font-size: 11px; }
+.q-zoom b { min-width: 38px; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .q-rodape .q-dica { display: none; } .q-rodape { gap: 8px; flex-wrap: wrap; } }
+@media (pointer: coarse) { #quadro .q-btn.q-icon { width: 38px; height: 38px; flex-basis: 38px; } #quadro .q-cor { width: 30px; height: 38px; } }
 .q-tela { position: relative; height: calc(100vh - 92px); min-height: 420px; overflow: hidden; border: 2px solid var(--ink); border-radius: 16px; background: var(--paper); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .q-tela:active { cursor: grabbing; }
 .q-grade { position: absolute; inset: 0; background-image: radial-gradient(circle, var(--line) 1.5px, transparent 1.6px); background-size: 24px 24px; pointer-events: none; }
@@ -473,7 +506,7 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .qn.texto.sel { border-color: var(--line); }
 .qn .qh { position: absolute; right: -8px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); cursor: crosshair; opacity: 0; transition: opacity .12s; }
 .qn:hover .qh, .qn.sel .qh { opacity: 1; }
-@media print { #quadro .q-barra, #quadro .q-dica { display: none !important; } .q-tela { height: auto; border: 0; } }
+@media print { #quadro .q-comandos, #quadro .q-rodape { display: none !important; } .q-tela { height: auto; border: 0; } }
 
 /* quadro: caneta, traços e painel da sala ao vivo */
 .q-tinta { position: absolute; left: -10000px; top: -10000px; width: 20000px; height: 20000px; max-width: none; pointer-events: none; z-index: 3; color: var(--ink); }
@@ -489,9 +522,9 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 #quadro { position: relative; }
 body.q-foco { overflow: hidden; }
 body.q-foco .side, body.q-foco .page-header, body.q-foco #scrim,
-body.q-foco #quadro .q-barra, body.q-foco #quadro .q-paginas, body.q-foco #quadro .q-sala, body.q-foco #quadro .q-dica { display: none !important; }
+body.q-foco #quadro .q-comandos, body.q-foco #quadro .q-rodape, body.q-foco #quadro .q-sala { display: none !important; }
 body.q-foco #quadro { position: fixed; inset: 0; z-index: 100; background: var(--paper); }
-body.q-foco #qTela { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; outline: none; }
+body.q-foco #quadro > #qTela { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; outline: none; }
 .q-sala { position: absolute; top: 48px; right: 8px; z-index: 10; width: min(340px, calc(100% - 16px)); max-height: calc(100% - 64px); overflow: auto; background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; padding: 16px; }
 .q-sala h3 { font-size: 16px; margin: 14px 0 4px; }
 .q-sala .q-h { margin: 0 0 10px; font-size: 13px; color: var(--mute); line-height: 1.4; }
