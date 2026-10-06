@@ -66,6 +66,7 @@
   let api = null, vista = null, dpr = 1, quadro = null;
   let tracos = [];          // traços desta tela ainda não confirmados pelo quadro: { key, p (mundo), w, cor }
   let proprios = [];        // chaves dos traços feitos aqui, para o Desfazer
+  const coresProprias = new Map(); // conserva a cor mesmo se um anfitrião antigo a omitir na confirmação
   const apagados = new Set();
   let modo = 'caneta', atual = null, borr = null, cursor = null, enviaT = 0;
   let corCaneta = 'inherit';
@@ -148,6 +149,7 @@
       ponto(e, { m, r, p: borr.p }); enviaBorracha(true); desenha(); return;
     }
     atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), cor: corCaneta, m, r };
+    coresProprias.set(atual.key, atual.cor);
     tracos.push(atual); proprios.push(atual.key); ponto(e, atual); desenha(); envia(true); botoes();
   });
   cv.addEventListener('pointermove', e => {
@@ -173,10 +175,12 @@
 
   $('desf').onclick = () => {
     const k = proprios.pop(); if (!k) return;
+    coresProprias.delete(k);
     tracos = tracos.filter(t => t.key !== k); apagados.add(k); api.apagar(k);
     botoes(); fundo(); desenha();
   };
   $('limpa').onclick = () => {
+    coresProprias.clear();
     proprios.forEach(k => apagados.add(k)); proprios = []; tracos = [];
     api.limpar(); botoes(); fundo(); desenha();
   };
@@ -205,7 +209,14 @@
     api = a; st('● Desenhe aqui');
     a.aoVivo(v => { vista = v; desenha(); fundo(); });
     Sala.ouvirQuadro(id, est => {
-      quadro = est;
+      let corDivergente = false;
+      quadro = { ...est, tracos: (est.tracos || []).map(t => {
+        const original = coresProprias.get(t.id);
+        if (!original || original === 'inherit' || original === t.cor) return t;
+        corDivergente = true;
+        return { ...t, cor: original };
+      }) };
+      st(corDivergente ? 'Atualize o quadro no computador para sincronizar as cores.' : '● Desenhe aqui');
       // o traço já chegou ao quadro: deixa de ser desenhado aqui e passa a vir do fundo
       tracos = tracos.filter(t => t === atual || !(est.tracos || []).some(h => h.id === t.key && h.p.length >= t.p.length));
       fundo(); desenha();
