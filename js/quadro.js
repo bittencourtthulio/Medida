@@ -420,7 +420,8 @@
     addTraco(id, t) {
       if (!est.tracos) est.tracos = [];
       const i = est.tracos.findIndex(x => x.id === id);
-      if (i >= 0) { est.tracos[i].p = t.p; est.tracos[i].w = t.w; } else est.tracos.push({ id, p: t.p, w: t.w, t: 1 });
+      const cor = /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : 'inherit';
+      if (i >= 0) { est.tracos[i].p = t.p; est.tracos[i].w = t.w; est.tracos[i].cor = cor; } else est.tracos.push({ id, p: t.p, w: t.w, cor, t: 1 });
       tinta(); salvar();
     },
     delTraco(id) { est.tracos = (est.tracos || []).filter(x => x.id !== id); tinta(); salvar(); },

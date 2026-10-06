@@ -49,7 +49,7 @@ window.Sala = {
   },
   publicar(s, estado) { return set(caminho(s.id, 'quadro'), { j: JSON.stringify(estado), t: Date.now() }).catch(() => {}); },
   publicarVista(s, v) { return set(caminho(s.id, 'vista'), v).catch(() => {}); },
-  // traços vindos do tablet: add(id, {p, w}) e del(id)
+  // traços vindos do tablet: add(id, {p, w, cor}) e del(id)
   ouvirTablet(s, add, del) {
     const r = caminho(s.id, `tablet/${s.chave}/tracos`);
     const up = x => { const v = x.val(); if (v) add(x.key, v); };
@@ -79,7 +79,7 @@ window.Sala = {
     return {
       vista: async () => { const x = await get(caminho(id, 'vista')); return x.val(); },
       novaChave: () => push(tr).key,
-      gravar: (key, t) => set(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`), { p: JSON.stringify(t.p), w: t.w }),
+      gravar: (key, t) => set(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`), { p: JSON.stringify(t.p), w: t.w, cor: /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : 'inherit' }),
       apagar: key => remove(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`)),
       limpar: () => remove(tr),
       borracha: (pts, r) => set(push(caminho(id, `tablet/${chave}/apagar`)), { p: JSON.stringify(pts), r }),

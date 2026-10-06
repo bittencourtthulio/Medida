@@ -21,6 +21,8 @@
   #sp { flex: 1; pointer-events: none !important; }
   #barra .btn { background: var(--paper); }
   #barra .btn.on { background: var(--ink); color: var(--paper); }
+  #barra .q-cores { background: var(--paper); }
+  #barra .q-cor { width: 36px; height: 36px; touch-action: manipulation; }
   #cv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; touch-action: none; background: transparent; cursor: crosshair; }
   #qTela { position: fixed; inset: 0; height: auto; border: 0; border-radius: 0; z-index: 0; pointer-events: none; }
   #qTela .qh, #qTela .qr { display: none; }
@@ -39,6 +41,14 @@
 <div id="barra">
   <p id="st">Conectando…</p><span id="sp"></span>
   <button class="btn ghost sm on" id="mCaneta" type="button" aria-label="Caneta">✎<span class="rot"> Caneta</span></button>
+  <div class="q-cores" role="group" aria-label="Cor da caneta">
+    <button class="q-cor" type="button" data-cor="inherit" style="--cor: var(--ink)" aria-label="Cor padrão do tema" title="Caneta padrão (preta no tema claro, branca no escuro)" aria-pressed="true"></button>
+    <button class="q-cor" type="button" data-cor="#2563eb" style="--cor: #2563eb" aria-label="Azul" title="Caneta azul" aria-pressed="false"></button>
+    <button class="q-cor" type="button" data-cor="#dc2626" style="--cor: #dc2626" aria-label="Vermelho" title="Caneta vermelha" aria-pressed="false"></button>
+    <button class="q-cor" type="button" data-cor="#15803d" style="--cor: #15803d" aria-label="Verde" title="Caneta verde" aria-pressed="false"></button>
+    <button class="q-cor" type="button" data-cor="#c2410c" style="--cor: #c2410c" aria-label="Laranja" title="Caneta laranja" aria-pressed="false"></button>
+    <button class="q-cor" type="button" data-cor="#9333ea" style="--cor: #9333ea" aria-label="Roxo" title="Caneta roxa" aria-pressed="false"></button>
+  </div>
   <button class="btn ghost sm" id="mBorracha" type="button" aria-label="Borracha">⌫<span class="rot"> Borracha</span></button>
   <button class="btn ghost sm" id="desf" type="button" aria-label="Desfazer" disabled>↶<span class="rot"> Desfazer</span></button>
   <button class="btn ghost sm" id="limpa" type="button" aria-label="Limpar meus traços" disabled>🗑<span class="rot"> Limpar</span></button>
@@ -54,10 +64,11 @@
   const cv = $('cv'), cx = cv.getContext('2d');
   const st = t => { $('st').textContent = t; };
   let api = null, vista = null, dpr = 1, quadro = null;
-  let tracos = [];          // traços desta tela ainda não confirmados pelo quadro: { key, p (mundo), w }
+  let tracos = [];          // traços desta tela ainda não confirmados pelo quadro: { key, p (mundo), w, cor }
   let proprios = [];        // chaves dos traços feitos aqui, para o Desfazer
   const apagados = new Set();
   let modo = 'caneta', atual = null, borr = null, cursor = null, enviaT = 0;
+  let corCaneta = 'inherit';
   const cor = () => getComputedStyle(document.body).color;
 
   // a tela do tablet mostra a parte do quadro que está visível no computador (encaixada, com folga)
@@ -76,6 +87,7 @@
     cx.lineCap = cx.lineJoin = 'round';
     tracos.forEach(t => {
       if (!t.p.length) return;
+      cx.strokeStyle = /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : cor();
       const X = i => m.ox + (t.p[i] - m.V.x) * m.u, Y = i => m.oy + (t.p[i + 1] - m.V.y) * m.u;
       cx.lineWidth = Math.max(1, t.w * m.u); cx.beginPath(); cx.moveTo(X(0), Y(0));
       if (t.p.length === 2) cx.lineTo(X(0) + .1, Y(0));
@@ -83,6 +95,7 @@
       cx.stroke();
     });
     if (modo === 'borracha' && cursor) {
+      cx.strokeStyle = cor();
       cx.lineWidth = 2; cx.beginPath(); cx.arc(cursor.x, cursor.y, 18, 0, 7); cx.stroke();
     }
   }
@@ -99,6 +112,12 @@
   }
   $('mCaneta').onclick = () => escolhe('caneta');
   $('mBorracha').onclick = () => escolhe('borracha');
+  const cores = document.querySelectorAll('[data-cor]');
+  cores.forEach(b => { b.onclick = () => {
+    corCaneta = b.dataset.cor;
+    cores.forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+    escolhe('caneta');
+  }; });
 
   /* ---------- caneta ---------- */
   function ponto(e, o) {
@@ -128,8 +147,8 @@
       cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
       ponto(e, { m, r, p: borr.p }); enviaBorracha(true); desenha(); return;
     }
-    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), m, r };
-    tracos.push(atual); proprios.push(atual.key); ponto(e, atual); envia(true); botoes();
+    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), cor: corCaneta, m, r };
+    tracos.push(atual); proprios.push(atual.key); ponto(e, atual); desenha(); envia(true); botoes();
   });
   cv.addEventListener('pointermove', e => {
     const r = cv.getBoundingClientRect();
