@@ -7,6 +7,7 @@
   let sel = null;            // { tipo: 'no' | 'seta', id }
   let desfazer = [];
   let pronto = false, salvaT, caneta = false, borracha = false;
+  let corCaneta = 'inherit';
 
   const uid = () => Math.random().toString(36).slice(2, 9);
   const mundo = () => $('qMundo');
@@ -57,7 +58,8 @@
       let d = `M${p[0]} ${p[1]}`;
       for (let i = 2; i < p.length; i += 2) d += `L${p[i]} ${p[i + 1]}`;
       if (p.length === 2) d += `L${p[0]} ${p[1]}`;
-      return `<path d="${d}" stroke-width="${t.w || 3}"/>`;
+      const cor = /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : 'inherit';
+      return `<path d="${d}" color="${cor}" stroke-width="${t.w || 3}"/>`;
     }).join('');
   }
   // Borracha: remove o trecho do traço que fica dentro do raio `r` (mundo) em torno de (cx, cy), partindo o traço em dois se preciso.
@@ -89,7 +91,7 @@
       const partes = cortaTraco(t.p, x, y, r);
       if (!partes) return novos.push(t);
       tocados.push(t);
-      partes.forEach(p => novos.push({ id: uid(), p, w: t.w }));
+      partes.forEach(p => novos.push({ id: uid(), p, w: t.w, ...(t.cor ? { cor: t.cor } : {}) }));
     });
     if (!tocados.length) return false;
     est.tracos = novos; tinta(); emite();
@@ -107,7 +109,7 @@
   function traco(ev) {
     foto();
     if (!est.tracos) est.tracos = [];
-    const t = { id: uid(), p: [], w: +(3 / est.vista.k).toFixed(1) };
+    const t = { id: uid(), p: [], w: +(3 / est.vista.k).toFixed(1), cor: corCaneta };
     est.tracos.push(t);
     const ponta = e => {
       const q = ponto(e), x = +q.x.toFixed(1), y = +q.y.toFixed(1), n = t.p.length;
@@ -376,6 +378,12 @@
       tela.classList.toggle('caneta', caneta); tela.classList.toggle('borracha', borracha);
     };
     $('qCaneta').onclick = () => modo('caneta');
+    const cores = $('quadro').querySelectorAll('[data-cor]');
+    cores.forEach(b => { b.onclick = () => {
+      corCaneta = b.dataset.cor;
+      cores.forEach(c => c.setAttribute('aria-pressed', String(c === b)));
+      if (!caneta) modo('caneta');
+    }; });
     $('qBorracha').onclick = () => modo('borracha');
     $('qApagar').onclick = apaga;
     $('qDesfazer').onclick = volta;

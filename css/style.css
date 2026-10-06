@@ -474,6 +474,12 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .q-tinta path { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
 .q-tela.caneta { cursor: crosshair; }
 #qCaneta.on { background: var(--ink); color: var(--paper); }
+.q-cores { display: inline-flex; align-items: center; gap: 2px; padding: 2px 4px; border: 1px solid var(--line); border-radius: 999px; }
+.q-cor { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 2px solid transparent; border-radius: 50%; background: transparent; cursor: pointer; }
+.q-cor::before { content: ''; width: 18px; height: 18px; border-radius: 50%; background: var(--cor); }
+.q-cor:hover { background: var(--soft); }
+.q-cor[aria-pressed="true"] { border-color: var(--ink); }
+.q-cor:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 #quadro { position: relative; }
 .q-sala { position: absolute; top: 48px; right: 8px; z-index: 10; width: min(340px, calc(100% - 16px)); max-height: calc(100% - 64px); overflow: auto; background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; padding: 16px; }
 .q-sala h3 { font-size: 16px; margin: 14px 0 4px; }
