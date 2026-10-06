@@ -101,6 +101,7 @@
       <button class="btn ghost sm" type="button" id="qBorracha" title="Apagar só um pedaço do desenho">⌫ Borracha</button>
       <select id="qModelo" aria-label="Inserir modelo"><option value="">Modelos…</option><option value="funil">Funil de vendas</option><option value="unit">Unit economics</option><option value="retencao">Receita recorrente</option></select>
       <span class="q-sp"></span>
+      <button class="btn ghost sm" type="button" id="qFoco" title="Mostrar apenas a área de escrita. Pressione Esc para voltar." aria-pressed="false" aria-controls="qTela">⛶ Só quadro</button>
       <button class="btn sm" type="button" id="qSalaBtn">📱 Tablet e turma</button>
       <button class="btn ghost sm" type="button" id="qDesfazer">Desfazer</button>
       <button class="btn ghost sm" type="button" id="qApagar">Apagar</button>
@@ -121,7 +122,7 @@
         <button class="btn ghost sm" type="button" id="qsEncerrar">Encerrar sessão</button>
       </div>
     </div>
-    <div class="q-tela" id="qTela">
+    <div class="q-tela" id="qTela" tabindex="-1" aria-label="Área de escrita do quadro. Pressione Esc para sair do modo só quadro.">
       <div class="q-grade" id="qGrade"></div>
       <div class="q-mundo" id="qMundo"><svg id="qSetas" class="q-setas" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg><svg id="qTinta" class="q-tinta" width="20000" height="20000" viewBox="-10000 -10000 20000 20000"></svg></div>
       <p class="q-dica">Arraste para mover · duplo clique edita · puxe a bolinha até outro elemento para ligar · puxe o canto para redimensionar · Delete apaga · Ctrl+rolagem dá zoom</p>

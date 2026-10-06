@@ -348,6 +348,9 @@
 
   function aoTeclar(ev) {
     if ($('quadro').hidden) return;
+    if (ev.key === 'Escape' && document.body.classList.contains('q-foco')) {
+      ev.preventDefault(); foco(false); return;
+    }
     if (ev.target.closest && ev.target.closest('[contenteditable="true"], [contenteditable="plaintext-only"], input, textarea')) return;
     if ((ev.key === 'Delete' || ev.key === 'Backspace') && sel) { ev.preventDefault(); apaga(); }
     else if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); volta(); }
@@ -362,6 +365,18 @@
     aplicaVista(); salvar();
   }
 
+  /* ---------- só a área de escrita ---------- */
+  function foco(ativo, devolverFoco = true) {
+    if (document.body.classList.contains('q-foco') === ativo) return;
+    document.body.classList.toggle('q-foco', ativo);
+    $('qFoco').setAttribute('aria-pressed', String(ativo));
+    if (ativo) {
+      $('qSala').hidden = true;
+      $('qTela').focus({ preventScroll: true });
+    } else if (devolverFoco) $('qFoco').focus({ preventScroll: true });
+    aplicaVista(); // informa ao tablet o novo tamanho da área visível
+  }
+
   /* ---------- montagem (uma vez) ---------- */
   function montar() {
     if (pronto) return; pronto = true;
@@ -370,6 +385,8 @@
     tela.addEventListener('dblclick', ev => { const no = ev.target.closest('.qn'); if (no) { sel = { tipo: 'no', id: no.dataset.id }; editar(no.dataset.id); } });
     tela.addEventListener('wheel', aoRolar, { passive: false });
     document.addEventListener('keydown', aoTeclar);
+    $('qFoco').onclick = () => foco(true);
+    addEventListener('resize', () => { if (!$('quadro').hidden) aplicaVista(); });
     $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => adiciona(b.dataset.add); });
     $('qModelo').onchange = e => { modelo(e.target.value); e.target.value = ''; };
     const modo = qual => {
@@ -408,6 +425,7 @@
 
   window.Quadro = {
     aoMudar: null, aoVista: null, aoApagar: null,
+    sairFoco: () => foco(false, false),
     apagaTraco,
     abrir() {
       montar();

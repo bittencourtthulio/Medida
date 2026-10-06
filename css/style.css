@@ -481,6 +481,11 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .q-cor[aria-pressed="true"] { border-color: var(--ink); }
 .q-cor:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 #quadro { position: relative; }
+body.q-foco { overflow: hidden; }
+body.q-foco .side, body.q-foco .page-header, body.q-foco #scrim,
+body.q-foco #quadro .q-barra, body.q-foco #quadro .q-sala, body.q-foco #quadro .q-dica { display: none !important; }
+body.q-foco #quadro { position: fixed; inset: 0; z-index: 100; background: var(--paper); }
+body.q-foco #qTela { width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; outline: none; }
 .q-sala { position: absolute; top: 48px; right: 8px; z-index: 10; width: min(340px, calc(100% - 16px)); max-height: calc(100% - 64px); overflow: auto; background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; padding: 16px; }
 .q-sala h3 { font-size: 16px; margin: 14px 0 4px; }
 .q-sala .q-h { margin: 0 0 10px; font-size: 13px; color: var(--mute); line-height: 1.4; }

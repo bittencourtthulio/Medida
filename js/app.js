@@ -365,6 +365,7 @@
     $('crumb').textContent = crumb;
   }
   function rota() {
+    if (window.Quadro) Quadro.sairFoco();
     const logado = usuario && usuario.nome;
     $('topAuth').hidden = $('authWrap').hidden = !!logado;
     $('shell').hidden = !logado;
