@@ -3,7 +3,8 @@
 (function () {
   const CHAVE = 'medida_quadro_v1';
   const $ = id => document.getElementById(id);
-  let est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } };
+  const vazia = () => ({ id: uid(), nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } });
+  let est, paginas = [], historicos = new Map(), finalizaArrasto = null;
   let sel = null;            // { tipo: 'no' | 'seta', id }
   let desfazer = [];
   let pronto = false, salvaT, caneta = false, borracha = false;
@@ -11,28 +12,86 @@
 
   const uid = () => Math.random().toString(36).slice(2, 9);
   const mundo = () => $('qMundo');
+  est = vazia(); paginas = [est];
 
   /* ---------- estado ---------- */
   function carregar() {
-    try { const s = JSON.parse(localStorage.getItem(CHAVE)); if (s && Array.isArray(s.nos) && Array.isArray(s.setas)) est = { vista: { x: 0, y: 0, k: 1 }, tracos: [], ...s }; } catch (e) { /* sem cache: começa vazio */ }
+    try {
+      const s = JSON.parse(localStorage.getItem(CHAVE));
+      const valida = p => p && Array.isArray(p.nos) && Array.isArray(p.setas);
+      if (s && Array.isArray(s.paginas) && s.paginas.length && s.paginas.every(valida)) {
+        paginas = s.paginas.map(p => ({ ...vazia(), ...p }));
+        est = paginas.find(p => p.id === s.ativa) || paginas[0];
+      } else if (valida(s)) { est = { ...vazia(), ...s }; paginas = [est]; }
+    } catch (e) { /* sem cache: começa vazio */ }
   }
+  function guardaAtual() { const i = paginas.findIndex(p => p.id === est.id); if (i >= 0) paginas[i] = est; }
+  function persistir() {
+    guardaAtual();
+    try {
+      localStorage.setItem(CHAVE, JSON.stringify({ versao: 2, ativa: est.id, paginas }));
+      if ($('qSalvo')) $('qSalvo').textContent = 'Salvo neste navegador';
+    } catch (e) {
+      if ($('qSalvo')) $('qSalvo').textContent = 'Não foi possível salvar no navegador. Baixe as páginas para guardar seus desenhos.';
+    }
+  }
+  function publico() { return { ...est, pagina: est.id, numeroPagina: paginas.findIndex(p => p.id === est.id) + 1, totalPaginas: paginas.length, area: visivel() }; }
   // transmite o quadro para a sala ao vivo (se houver), no máximo ~8 vezes por segundo
   let emT = 0, emP = false, vistaT;
   function emite() {
     if (!window.Quadro || !Quadro.aoMudar) return;
     const agora = Date.now();
-    if (agora - emT > 120) { emT = agora; Quadro.aoMudar(est); }
-    else if (!emP) { emP = true; setTimeout(() => { emP = false; emT = Date.now(); Quadro.aoMudar && Quadro.aoMudar(est); }, 130); }
+    if (agora - emT > 120) { emT = agora; Quadro.aoMudar(publico()); }
+    else if (!emP) { emP = true; setTimeout(() => { emP = false; emT = Date.now(); Quadro.aoMudar && Quadro.aoMudar(publico()); }, 130); }
   }
   function salvar() {
     emite();
     clearTimeout(salvaT);
-    salvaT = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(est)); } catch (e) { /* cache cheio ou bloqueado */ } }, 250);
+    if ($('qSalvo')) $('qSalvo').textContent = 'Salvando…';
+    salvaT = setTimeout(persistir, 250);
   }
   function foto() { desfazer.push(JSON.stringify(est)); if (desfazer.length > 50) desfazer.shift(); }
   function volta() {
     if (!desfazer.length) return;
     est = JSON.parse(desfazer.pop()); sel = null; desenhar(); salvar();
+  }
+
+  /* ---------- páginas ---------- */
+  function controlesPaginas() {
+    if (!$('qPagina')) return;
+    const i = paginas.findIndex(p => p.id === est.id);
+    $('qPagina').replaceChildren(...paginas.map((p, n) => new Option(`Página ${n + 1} de ${paginas.length}`, p.id, false, p.id === est.id)));
+    $('qAnterior').disabled = i <= 0;
+    $('qProxima').disabled = i >= paginas.length - 1;
+  }
+  function encerraEdicao() {
+    const e = document.activeElement;
+    if (e && e.isContentEditable) e.blur();
+    if (finalizaArrasto) finalizaArrasto();
+  }
+  function irPagina(id) {
+    const destino = paginas.find(p => p.id === id);
+    if (!destino || id === est.id) return;
+    encerraEdicao(); guardaAtual(); historicos.set(est.id, desfazer);
+    est = destino; desfazer = historicos.get(id) || []; sel = null;
+    desenhar(); controlesPaginas(); salvar(); persistir();
+    if (Quadro.aoVista) Quadro.aoVista(visivel());
+  }
+  function novaPagina() {
+    encerraEdicao(); guardaAtual();
+    const p = vazia(); paginas.push(p); irPagina(p.id);
+  }
+  async function exportar(todas) {
+    encerraEdicao(); guardaAtual(); persistir();
+    const botoes = [$('qExportarPagina'), $('qExportarTudo')], aviso = $('qExportStatus');
+    botoes.forEach(b => { b.disabled = true; });
+    const copia = JSON.parse(JSON.stringify(todas ? paginas : [est]));
+    const inicio = todas ? 1 : paginas.findIndex(p => p.id === est.id) + 1;
+    try {
+      await QuadroExportar.baixar(copia, { todas, inicio, borda, progresso: t => { aviso.textContent = t; } });
+      aviso.textContent = todas ? 'ZIP pronto: um JPEG por página.' : 'JPEG pronto.';
+    } catch (e) { aviso.textContent = 'Não foi possível exportar. Tente novamente.'; }
+    finally { botoes.forEach(b => { b.disabled = false; }); }
   }
 
   /* ---------- desenho ---------- */
@@ -47,7 +106,7 @@
   // retângulo do mundo que aparece na tela (o tablet desenha dentro dele)
   function visivel() {
     const r = $('qTela').getBoundingClientRect(), v = est.vista;
-    return { x: Math.round(-v.x / v.k), y: Math.round(-v.y / v.k), w: Math.round(r.width / v.k), h: Math.round(r.height / v.k) };
+    return { x: Math.round(-v.x / v.k), y: Math.round(-v.y / v.k), w: Math.round(r.width / v.k), h: Math.round(r.height / v.k), pagina: est.id };
   }
 
   /* ---------- traços à mão livre (caneta do quadro e do tablet) ---------- */
@@ -84,17 +143,18 @@
     if (at.length >= 4) partes.push(at);
     return partes;
   }
-  function apagaTraco(x, y, r) {
-    if (!est.tracos || !est.tracos.length) return false;
+  function apagaTraco(x, y, r, pagina) {
+    const alvo = pagina ? (pagina === est.id ? est : paginas.find(p => p.id === pagina)) : est;
+    if (!alvo || !alvo.tracos || !alvo.tracos.length) return false;
     const novos = [], tocados = [];
-    est.tracos.forEach(t => {
+    alvo.tracos.forEach(t => {
       const partes = cortaTraco(t.p, x, y, r);
       if (!partes) return novos.push(t);
       tocados.push(t);
       partes.forEach(p => novos.push({ id: uid(), p, w: t.w, ...(t.cor ? { cor: t.cor } : {}) }));
     });
     if (!tocados.length) return false;
-    est.tracos = novos; tinta(); emite();
+    alvo.tracos = novos; if (alvo === est) tinta(); salvar();
     const doTablet = tocados.filter(t => t.t).map(t => t.id);
     if (doTablet.length && Quadro.aoApagar) Quadro.aoApagar(doTablet);
     return true;
@@ -308,15 +368,18 @@
   }
 
   function arrasta(ev, mv, fim) {
+    if (finalizaArrasto) finalizaArrasto();
     const up = e => {
+      finalizaArrasto = null;
       removeEventListener('pointermove', mv);
       removeEventListener('pointerup', up);
       removeEventListener('pointercancel', up);
-      fim && fim(e);
+      fim && fim(e || ev);
     };
     addEventListener('pointermove', mv);
     addEventListener('pointerup', up);
     addEventListener('pointercancel', up);
+    finalizaArrasto = up;
   }
 
   function ligando(ev, deId) {
@@ -352,6 +415,12 @@
       ev.preventDefault(); foco(false); return;
     }
     if (ev.target.closest && ev.target.closest('[contenteditable="true"], [contenteditable="plaintext-only"], input, textarea')) return;
+    if (ev.key === 'PageDown' || ev.key === 'PageUp') {
+      ev.preventDefault();
+      const i = paginas.findIndex(p => p.id === est.id), p = paginas[i + (ev.key === 'PageDown' ? 1 : -1)];
+      if (p) irPagina(p.id);
+      return;
+    }
     if ((ev.key === 'Delete' || ev.key === 'Backspace') && sel) { ev.preventDefault(); apaga(); }
     else if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); volta(); }
     else if (ev.key === 'Enter' && sel && sel.tipo === 'no') { ev.preventDefault(); editar(sel.id); }
@@ -386,6 +455,14 @@
     tela.addEventListener('wheel', aoRolar, { passive: false });
     document.addEventListener('keydown', aoTeclar);
     $('qFoco').onclick = () => foco(true);
+    $('qPagina').onchange = e => irPagina(e.target.value);
+    $('qAnterior').onclick = () => { const i = paginas.findIndex(p => p.id === est.id); if (i > 0) irPagina(paginas[i - 1].id); };
+    $('qProxima').onclick = () => { const i = paginas.findIndex(p => p.id === est.id); if (i < paginas.length - 1) irPagina(paginas[i + 1].id); };
+    $('qNovaPagina').onclick = novaPagina;
+    $('qExportarPagina').onclick = () => exportar(false);
+    $('qExportarTudo').onclick = () => exportar(true);
+    addEventListener('pagehide', () => { encerraEdicao(); persistir(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { encerraEdicao(); persistir(); } });
     addEventListener('resize', () => { if (!$('quadro').hidden) aplicaVista(); });
     $('quadro').querySelectorAll('[data-add]').forEach(b => { b.onclick = () => adiciona(b.dataset.add); });
     $('qModelo').onchange = e => { modelo(e.target.value); e.target.value = ''; };
@@ -406,7 +483,7 @@
     $('qDesfazer').onclick = volta;
     $('qMais').onclick = () => zoom(1.2);
     $('qMenos').onclick = () => zoom(1 / 1.2);
-    $('qLimpar').onclick = () => { if ((est.nos.length || (est.tracos || []).length) && confirm('Limpar o quadro inteiro?')) { foto(); const doTablet = (est.tracos || []).filter(t => t.t).map(t => t.id); if (doTablet.length && Quadro.aoApagar) Quadro.aoApagar(doTablet); est = { nos: [], setas: [], tracos: [], vista: { x: 0, y: 0, k: 1 } }; sel = null; desenhar(); salvar(); } };
+    $('qLimpar').onclick = () => { if ((est.nos.length || (est.tracos || []).length) && confirm('Limpar apenas esta página? As outras páginas serão mantidas.')) { foto(); const doTablet = (est.tracos || []).filter(t => t.t).map(t => t.id); if (doTablet.length && Quadro.aoApagar) Quadro.aoApagar(doTablet); est = { ...vazia(), id: est.id }; sel = null; desenhar(); salvar(); } };
   }
 
   /* ---------- sala ao vivo: entradas e saídas ---------- */
@@ -431,18 +508,22 @@
       montar();
       if (!this.carregado) { carregar(); this.carregado = true; }
       desenhar();
+      controlesPaginas();
     },
-    estado: () => est,
+    estado: publico,
+    primeiraPagina: () => paginas[0].id,
     vista: visivel,
     // traço vindo do tablet (cria ou atualiza) ou apagado por lá
     addTraco(id, t) {
-      if (!est.tracos) est.tracos = [];
-      const i = est.tracos.findIndex(x => x.id === id);
+      guardaAtual();
+      const alvo = t.pagina ? paginas.find(p => p.id === t.pagina) : (paginas.find(p => p.tracos.some(x => x.id === id)) || paginas[0]);
+      if (!alvo) return;
+      const i = alvo.tracos.findIndex(x => x.id === id);
       const cor = /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : 'inherit';
-      if (i >= 0) { est.tracos[i].p = t.p; est.tracos[i].w = t.w; est.tracos[i].cor = cor; } else est.tracos.push({ id, p: t.p, w: t.w, cor, t: 1 });
-      tinta(); salvar();
+      if (i >= 0) { alvo.tracos[i].p = t.p; alvo.tracos[i].w = t.w; alvo.tracos[i].cor = cor; } else alvo.tracos.push({ id, p: t.p, w: t.w, cor, t: 1 });
+      if (alvo === est) tinta(); salvar();
     },
-    delTraco(id) { est.tracos = (est.tracos || []).filter(x => x.id !== id); tinta(); salvar(); },
+    delTraco(id) { guardaAtual(); paginas.forEach(p => { p.tracos = p.tracos.filter(x => x.id !== id); }); tinta(); salvar(); },
     // tablet: mostra o quadro de fundo, na mesma região (V) que aparece no computador; `ocultos` são traços que o tablet já desenha por conta própria
     verVista(novo, V, ocultos) {
       est = { nos: [], setas: [], tracos: [], ...novo, vista: { x: 0, y: 0, k: 1 } };

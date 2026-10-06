@@ -23,6 +23,7 @@
   #barra .btn.on { background: var(--ink); color: var(--paper); }
   #barra .q-cores { background: var(--paper); }
   #barra .q-cor { width: 36px; height: 36px; touch-action: manipulation; }
+  #mPagina { padding: 6px 12px; border-radius: 999px; background: var(--paper); font-size: 13px; }
   #cv { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; touch-action: none; background: transparent; cursor: crosshair; }
   #qTela { position: fixed; inset: 0; height: auto; border: 0; border-radius: 0; z-index: 0; pointer-events: none; }
   #qTela .qh, #qTela .qr { display: none; }
@@ -40,6 +41,7 @@
 <canvas id="cv"></canvas>
 <div id="barra">
   <p id="st">Conectando…</p><span id="sp"></span>
+  <span id="mPagina" aria-live="polite">Página 1</span>
   <button class="btn ghost sm on" id="mCaneta" type="button" aria-label="Caneta">✎<span class="rot"> Caneta</span></button>
   <div class="q-cores" role="group" aria-label="Cor da caneta">
     <button class="q-cor" type="button" data-cor="inherit" style="--cor: var(--ink)" aria-label="Cor padrão do tema" title="Caneta padrão (preta no tema claro, branca no escuro)" aria-pressed="true"></button>
@@ -51,7 +53,7 @@
   </div>
   <button class="btn ghost sm" id="mBorracha" type="button" aria-label="Borracha">⌫<span class="rot"> Borracha</span></button>
   <button class="btn ghost sm" id="desf" type="button" aria-label="Desfazer" disabled>↶<span class="rot"> Desfazer</span></button>
-  <button class="btn ghost sm" id="limpa" type="button" aria-label="Limpar meus traços" disabled>🗑<span class="rot"> Limpar</span></button>
+  <button class="btn ghost sm" id="limpa" type="button" aria-label="Limpar meus traços desta página" disabled>🗑<span class="rot"> Limpar página</span></button>
   <button class="btn ghost sm" id="cheia" type="button" aria-label="Tela cheia">⛶<span class="rot"> Tela cheia</span></button>
 </div>
 <script src="js/config.js"></script>
@@ -66,6 +68,8 @@
   let api = null, vista = null, dpr = 1, quadro = null;
   let tracos = [];          // traços desta tela ainda não confirmados pelo quadro: { key, p (mundo), w, cor }
   let proprios = [];        // chaves dos traços feitos aqui, para o Desfazer
+  const historicosPaginas = new Map();
+  const paginaAtual = () => quadro && quadro.pagina || '';
   const coresProprias = new Map(); // conserva a cor mesmo se um anfitrião antigo a omitir na confirmação
   const apagados = new Set();
   let modo = 'caneta', atual = null, borr = null, cursor = null, enviaT = 0;
@@ -87,7 +91,7 @@
     cx.strokeStyle = cor(); cx.globalAlpha = .25; cx.lineWidth = 1; cx.strokeRect(m.ox + .5, m.oy + .5, m.dw - 1, m.dh - 1); cx.globalAlpha = 1;
     cx.lineCap = cx.lineJoin = 'round';
     tracos.forEach(t => {
-      if (!t.p.length) return;
+      if (!t.p.length || t.pagina !== paginaAtual()) return;
       cx.strokeStyle = /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : cor();
       const X = i => m.ox + (t.p[i] - m.V.x) * m.u, Y = i => m.oy + (t.p[i + 1] - m.V.y) * m.u;
       cx.lineWidth = Math.max(1, t.w * m.u); cx.beginPath(); cx.moveTo(X(0), Y(0));
@@ -135,20 +139,20 @@
     const agora = Date.now();
     if (!borr.p.length || (!forca && agora - borr.t < 70)) return;
     borr.t = agora; const pts = borr.p; borr.p = [];
-    api.borracha(pts, +borr.raio.toFixed(2)).catch(() => st('Sem conexão. Tente de novo.'));
+    api.borracha(pts, +borr.raio.toFixed(2), borr.pagina).catch(() => st('Sem conexão. Tente de novo.'));
   }
 
   cv.addEventListener('pointerdown', e => {
-    if (!api || atual || borr) return;
+    if (!api || !quadro || atual || borr) return;
     e.preventDefault();
     cv.setPointerCapture(e.pointerId);
     const m = mapa(), r = cv.getBoundingClientRect();
     if (modo === 'borracha') {
-      borr = { m, rect: r, p: [], t: 0, raio: raio(m) };
+      borr = { m, rect: r, p: [], t: 0, raio: raio(m), pagina: paginaAtual() };
       cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
       ponto(e, { m, r, p: borr.p }); enviaBorracha(true); desenha(); return;
     }
-    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), cor: corCaneta, m, r };
+    atual = { key: api.novaChave(), p: [], w: +(3 / m.u).toFixed(1), cor: corCaneta, pagina: paginaAtual(), m, r };
     coresProprias.set(atual.key, atual.cor);
     tracos.push(atual); proprios.push(atual.key); ponto(e, atual); desenha(); envia(true); botoes();
   });
@@ -180,9 +184,11 @@
     botoes(); fundo(); desenha();
   };
   $('limpa').onclick = () => {
-    coresProprias.clear();
-    proprios.forEach(k => apagados.add(k)); proprios = []; tracos = [];
-    api.limpar(); botoes(); fundo(); desenha();
+    const ids = [...proprios];
+    ids.forEach(k => { apagados.add(k); coresProprias.delete(k); }); proprios = [];
+    tracos = tracos.filter(t => t.pagina !== paginaAtual());
+    Promise.all(ids.map(k => api.apagar(k))).catch(() => st('Sem conexão. Tente de novo.'));
+    botoes(); fundo(); desenha();
   };
 
   /* ---------- tela cheia: só a área de desenho ---------- */
@@ -207,8 +213,15 @@
   else if (!Sala.disponivel) st('Sala ao vivo não configurada.');
   else Sala.tablet(id, chave).then(a => {
     api = a; st('● Desenhe aqui');
-    a.aoVivo(v => { vista = v; desenha(); fundo(); });
+    a.aoVivo(v => { if (!v || (v.pagina && v.pagina !== paginaAtual())) return; vista = v; desenha(); fundo(); });
     Sala.ouvirQuadro(id, est => {
+      if ((est.pagina || '') !== paginaAtual()) {
+        fim();
+        historicosPaginas.set(paginaAtual(), proprios);
+        proprios = historicosPaginas.get(est.pagina || '') || [];
+        cursor = null;
+      }
+      if (est.area) vista = est.area;
       let corDivergente = false;
       quadro = { ...est, tracos: (est.tracos || []).map(t => {
         const original = coresProprias.get(t.id);
@@ -216,6 +229,8 @@
         corDivergente = true;
         return { ...t, cor: original };
       }) };
+      $('mPagina').textContent = `Página ${est.numeroPagina || 1} de ${est.totalPaginas || 1}`;
+      botoes();
       st(corDivergente ? 'Atualize o quadro no computador para sincronizar as cores.' : '● Desenhe aqui');
       // o traço já chegou ao quadro: deixa de ser desenhado aqui e passa a vir do fundo
       tracos = tracos.filter(t => t === atual || !(est.tracos || []).some(h => h.id === t.key && h.p.length >= t.p.length));

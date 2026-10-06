@@ -79,10 +79,10 @@ window.Sala = {
     return {
       vista: async () => { const x = await get(caminho(id, 'vista')); return x.val(); },
       novaChave: () => push(tr).key,
-      gravar: (key, t) => set(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`), { p: JSON.stringify(t.p), w: t.w, cor: /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : 'inherit' }),
+      gravar: (key, t) => set(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`), { p: JSON.stringify(t.p), w: t.w, cor: /^#[0-9a-f]{6}$/i.test(t.cor) ? t.cor : 'inherit', ...(t.pagina ? { pagina: t.pagina } : {}) }),
       apagar: key => remove(ref(db, `salas/${id}/tablet/${chave}/tracos/${key}`)),
       limpar: () => remove(tr),
-      borracha: (pts, r) => set(push(caminho(id, `tablet/${chave}/apagar`)), { p: JSON.stringify(pts), r }),
+      borracha: (pts, r, pagina) => set(push(caminho(id, `tablet/${chave}/apagar`)), { p: JSON.stringify(pts), r, ...(pagina ? { pagina } : {}) }),
       aoVivo: cb => onValue(caminho(id, 'vista'), x => cb(x.val())),
     };
   },

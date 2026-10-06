@@ -20,9 +20,9 @@ async function iniciar() {
     $('qsTurmaLink').value = l.turma;
     Quadro.aoMudar = est => Sala.publicar(sessao, est);
     Quadro.aoVista = v => Sala.publicarVista(sessao, v);
-    parar = Sala.ouvirTablet(sessao, (id, t) => { try { Quadro.addTraco(id, { p: JSON.parse(t.p), w: t.w, cor: t.cor }); } catch (e) { /* traço inválido */ } }, id => Quadro.delTraco(id));
+    parar = Sala.ouvirTablet(sessao, (id, t) => { try { Quadro.addTraco(id, { p: JSON.parse(t.p), w: t.w, cor: t.cor, pagina: t.pagina }); } catch (e) { /* traço inválido */ } }, id => Quadro.delTraco(id));
     Quadro.aoApagar = ids => ids.forEach(id => Sala.apagarTraco(sessao, id));
-    const parar2 = Sala.ouvirApagar(sessao, v => { try { const p = JSON.parse(v.p); for (let i = 0; i < p.length; i += 2) Quadro.apagaTraco(p[i], p[i + 1], v.r); } catch (e) { /* comando inválido */ } });
+    const parar2 = Sala.ouvirApagar(sessao, v => { try { const p = JSON.parse(v.p); for (let i = 0; i < p.length; i += 2) Quadro.apagaTraco(p[i], p[i + 1], v.r, v.pagina || Quadro.primeiraPagina()); } catch (e) { /* comando inválido */ } });
     const parar1 = parar; parar = () => { parar1(); parar2(); };
     Sala.publicar(sessao, Quadro.estado());
     Sala.publicarVista(sessao, Quadro.vista());

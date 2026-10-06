@@ -82,6 +82,20 @@
 
   <!-- quadro branco -->
   <section id="quadro" hidden>
+    <div class="q-paginas">
+      <div class="q-paginacao" role="group" aria-label="Páginas do quadro">
+        <button class="btn ghost sm" type="button" id="qAnterior" aria-label="Página anterior">←</button>
+        <select id="qPagina" aria-label="Página atual"></select>
+        <button class="btn ghost sm" type="button" id="qProxima" aria-label="Próxima página">→</button>
+        <button class="btn ghost sm" type="button" id="qNovaPagina">+ Nova página</button>
+      </div>
+      <span id="qSalvo" class="q-salvo" role="status">Salvo neste navegador</span>
+      <div class="q-paginacao" role="group" aria-label="Exportar páginas">
+        <button class="btn ghost sm" type="button" id="qExportarPagina">Baixar página JPEG</button>
+        <button class="btn ghost sm" type="button" id="qExportarTudo">Baixar todas (ZIP)</button>
+      </div>
+      <span id="qExportStatus" class="q-salvo" role="status"></span>
+    </div>
     <div class="q-barra">
       <button class="btn ghost sm" type="button" data-add="caixa">+ Caixa</button>
       <button class="btn ghost sm" type="button" data-add="nota">+ Nota</button>
@@ -105,7 +119,7 @@
       <button class="btn sm" type="button" id="qSalaBtn">📱 Tablet e turma</button>
       <button class="btn ghost sm" type="button" id="qDesfazer">Desfazer</button>
       <button class="btn ghost sm" type="button" id="qApagar">Apagar</button>
-      <button class="btn ghost sm" type="button" id="qLimpar">Limpar</button>
+      <button class="btn ghost sm" type="button" id="qLimpar">Limpar página</button>
       <span class="q-zoom"><button class="btn ghost sm" type="button" id="qMenos" aria-label="Diminuir">−</button><b id="qZoom">100%</b><button class="btn ghost sm" type="button" id="qMais" aria-label="Aumentar">+</button></span>
     </div>
     <div class="q-sala" id="qSala" hidden role="dialog" aria-label="Tablet e turma">
@@ -186,6 +200,7 @@
 <script src="js/core.js"></script>
 <script src="js/graficos.js"></script>
 <script src="js/manifest.js"></script>
+<script src="js/quadro-exportar.js"></script>
 <script src="js/quadro.js"></script>
 <script src="js/cenarios.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
