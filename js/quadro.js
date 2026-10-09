@@ -444,6 +444,14 @@
   }
 
   /* ---------- só a área de escrita ---------- */
+  function barraFixa(fixa) {
+    document.body.classList.toggle('q-barra', fixa);
+    $('qFixar').setAttribute('aria-pressed', String(fixa));
+    $('qFixar').title = fixa ? 'Ocultar barra de ações' : 'Mostrar barra de ações';
+    $('qFixar').setAttribute('aria-label', fixa ? 'Ocultar barra de ações' : 'Fixar barra de ações no topo');
+    aplicaVista();
+  }
+
   function foco(ativo, devolverFoco = true) {
     if (document.body.classList.contains('q-foco') === ativo) return;
     document.body.classList.toggle('q-foco', ativo);
@@ -464,7 +472,8 @@
     tela.addEventListener('dblclick', ev => { const no = ev.target.closest('.qn'); if (no) { sel = { tipo: 'no', id: no.dataset.id }; editar(no.dataset.id); } });
     tela.addEventListener('wheel', aoRolar, { passive: false });
     document.addEventListener('keydown', aoTeclar);
-    $('qFoco').onclick = () => foco(true);
+    $('qFoco').onclick = () => foco(!document.body.classList.contains('q-foco'));
+    $('qFixar').onclick = () => barraFixa(!document.body.classList.contains('q-barra'));
     $('qPagina').onchange = e => irPagina(e.target.value);
     $('qAnterior').onclick = () => { const i = paginas.findIndex(p => p.id === est.id); if (i > 0) irPagina(paginas[i - 1].id); };
     $('qProxima').onclick = () => { const i = paginas.findIndex(p => p.id === est.id); if (i < paginas.length - 1) irPagina(paginas[i + 1].id); };
