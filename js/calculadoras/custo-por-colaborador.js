@@ -3,74 +3,71 @@ registrar({
   id: 'custo-por-colaborador',
   nome: 'Custo por colaborador',
   categoria: 'Finanças',
-  descricao: 'Quanto custa por mês manter cada pessoa quando salários, encargos, benefícios e ferramentas entram como valores do mês?',
-  termos: 'custo por colaborador custo por funcionario custo por pessoa custo mensal headcount folha do mes encargos beneficios custo carregado quanto custa cada pessoa do time custo de um funcionario salario mais encargos',
+  descricao: 'Divida a receita mensal pelo total de colaboradores e veja se o resultado está ruim, OK ou bom.',
+  termos: 'custo por colaborador custo por funcionario custo por pessoa receita mensal por colaborador faturamento por colaborador receita por pessoa produtividade do time headcount eficiencia do time quinze mil vinte e cinco mil',
   campos: [
-    { id: 'colaboradores', rotulo: 'Pessoas no time', valor: 8, dica: 'Quem está na folha neste mês, inclusive sócios que trabalham.' },
-    { id: 'salarios', rotulo: 'Salários brutos do mês', prefixo: 'R$', valor: 48000, dica: 'Soma dos brutos, sem encargos nem benefícios.' },
-    { id: 'encargos', rotulo: 'Encargos do mês', prefixo: 'R$', valor: 19200, dica: 'O que já se paga ou provisiona no mês (INSS patronal, FGTS, 13º, férias). A calculadora não estima alíquota.' },
-    { id: 'beneficios', rotulo: 'Benefícios do mês', prefixo: 'R$', valor: 6400, dica: 'VR, VT, plano de saúde e similares, no total do mês.' },
-    { id: 'ferramentas', rotulo: 'Ferramentas do mês', prefixo: 'R$', valor: 2400, dica: 'Software, equipamento e outros custos do mês por causa do time.' },
+    { id: 'receita', rotulo: 'Receita mensal', prefixo: 'R$', valor: 160000, dica: 'Receita total da empresa no mês.' },
+    { id: 'colaboradores', rotulo: 'Total de colaboradores', valor: 8, dica: 'Número inteiro de pessoas no time, incluindo sócios que trabalham na empresa.' },
   ],
   calcular(v) {
-    const { brl, num, pct } = fmt;
-    const total = v.salarios + v.encargos + v.beneficios + v.ferramentas;
-    if (!(v.colaboradores > 0) || !(total > 0)) {
+    const { brl, num } = fmt;
+    if (!Number.isFinite(v.receita) || v.receita < 0 || !Number.isSafeInteger(v.colaboradores) || v.colaboradores <= 0) {
       return {
-        kpis: [
-          { nome: 'Custo por colaborador', valor: '—', nota: 'faltam pessoas ou valores do mês' },
-          { nome: 'Em doze meses', valor: '—', nota: 'faltam pessoas ou valores do mês' },
-          { nome: 'Custo total do mês', valor: '—', nota: 'faltam valores do mês' },
-          { nome: 'Vezes o salário', valor: '—', nota: 'faltam salários do mês' },
-        ],
-        diagnostico: { tipo: 'warn', titulo: 'Faltam dados', texto: 'Informe quantas pessoas há no time e pelo menos um valor do mês (salários, encargos, benefícios ou ferramentas) para calcular o custo por colaborador.' },
+        kpis: [{ nome: 'Receita por colaborador', valor: '—', nota: 'receita mensal ÷ total de colaboradores' }],
+        diagnostico: {
+          tipo: 'warn',
+          titulo: 'Confira os dados',
+          texto: 'Informe uma receita mensal igual ou maior que zero e um total inteiro de pelo menos um colaborador.',
+        },
       };
     }
-    const extras = v.encargos + v.beneficios + v.ferramentas;
-    const pp = total / v.colaboradores;
-    const anual = pp * 12;
-    const vezes = v.salarios > 0 ? total / v.salarios : null;
-    const tipo = extras <= v.salarios ? 'good' : 'warn';
-    const pessoas = num(v.colaboradores, 0);
-
-    const origens = [
-      ['Salários', v.salarios, 'cheio'],
-      ['Encargos', v.encargos, 'hachurado'],
-      ['Benefícios', v.beneficios, 'pontilhado'],
-      ['Ferramentas', v.ferramentas, 'vazado'],
-    ];
-
-    const pontos = [
-      `Cada pessoa custa ${brl(pp)} por mês: ${brl(total)} do mês divididos por ${pessoas} ${v.colaboradores === 1 ? 'pessoa' : 'pessoas'}.`,
-      `Repetindo o mesmo mês doze vezes, sem reajuste, são ${brl(anual)} por pessoa e ${brl(total * 12)} no ano para o time todo.`,
-      `Salários são ${pct(v.salarios / total)} do custo; o que não é salário (encargos, benefícios e ferramentas) soma ${brl(extras)}, ${pct(extras / total)} do total.`,
-    ];
-    if (vezes != null) pontos.push(`Para cada R$ 1,00 de salário bruto, o time custa ${brl(vezes)}: ${num(vezes, 2)} vezes o salário.`);
-    if (tipo === 'warn') pontos.push(`O que não é salário (${brl(extras)}) passa da folha de salários (${brl(v.salarios)}). É uma leitura da própria conta, não uma meta de mercado: vale conferir qual das três linhas pesa mais.`);
-    else pontos.push(`O que não é salário (${brl(extras)}) cabe dentro da folha de salários (${brl(v.salarios)}). É uma leitura da própria conta, não uma meta de mercado.`);
-    pontos.push('Use este número ao pesar uma contratação: o salário combinado não é o custo da pessoa. Confira se os encargos informados são o que se paga ou provisiona de fato no mês.');
+    const porColaborador = v.receita / v.colaboradores;
+    const tipo = porColaborador < 15000 ? 'bad' : porColaborador <= 25000 ? 'warn' : 'good';
+    const classificacao = { bad: 'Ruim', warn: 'OK', good: 'Bom' }[tipo];
+    const leitura = {
+      bad: `O resultado está abaixo de ${brl(15000)} por colaborador. Para chegar à faixa OK com o mesmo time, a receita mensal precisa alcançar ${brl(15000 * v.colaboradores, 2)}.`,
+      warn: `O resultado está entre ${brl(15000)} e ${brl(25000)} por colaborador, inclusive. Para entrar na faixa Bom com o mesmo time, a receita mensal precisa superar ${brl(25000 * v.colaboradores, 2)}.`,
+      good: `O resultado supera ${brl(25000)} por colaborador. Acompanhe a relação entre receita e tamanho do time para manter essa faixa.`,
+    }[tipo];
 
     return {
-      paineis: [
-        { tipo: 'composicao', titulo: 'Para onde vai o custo do mês', formato: 'brl',
-          partes: origens.map(([rotulo, valor, tom]) => ({ rotulo, valor, tom })) },
-        { tipo: 'barras', titulo: 'Custo do mês por pessoa', formato: 'brl',
-          dados: origens.map(([rotulo, valor, tom]) => ({ rotulo, valor: valor / v.colaboradores, tom })) },
-        { tipo: 'tabela', titulo: 'Origem do custo, no mês e por pessoa', colunas: ['Origem', 'No mês', 'Por pessoa'],
-          linhas: origens.map(([rotulo, valor]) => [rotulo, brl(valor), brl(valor / v.colaboradores)]).concat([['Custo total', brl(total), brl(pp)]]) },
-      ],
       kpis: [
-        { nome: 'Custo por colaborador', valor: brl(pp), nota: `${brl(total)} ÷ ${pessoas} ${v.colaboradores === 1 ? 'pessoa' : 'pessoas'}, por mês`, selo: tipo === 'good' ? ['good', 'extras cabem na folha'] : ['warn', 'extras passam da folha'] },
-        { nome: 'Em doze meses', valor: brl(anual), nota: 'o mesmo mês repetido doze vezes, sem reajuste' },
-        { nome: 'Custo total do mês', valor: brl(total), nota: 'salários + encargos + benefícios + ferramentas' },
-        { nome: 'Vezes o salário', valor: vezes != null ? `${num(vezes, 2)} ×` : '—', nota: vezes != null ? 'custo total ÷ salários brutos' : 'informe os salários para calcular' },
+        {
+          nome: 'Receita por colaborador',
+          valor: brl(porColaborador, 2),
+          nota: `${brl(v.receita, 2)} ÷ ${num(v.colaboradores, 0)} ${v.colaboradores === 1 ? 'colaborador' : 'colaboradores'}, por mês`,
+          selo: [tipo, classificacao],
+        },
       ],
       diagnostico: {
         tipo,
-        titulo: tipo === 'good' ? 'O custo extra cabe dentro da folha' : 'O que não é salário passa da folha',
-        texto: 'Custo por colaborador mostra quanto cada pessoa pesa no mês quando entram encargos, benefícios e ferramentas, não só o salário. A conta usa os valores que você informou, sem estimar alíquota nem comparar com mercado.',
-        pontos,
+        titulo: `${classificacao}: ${brl(porColaborador, 2)} por colaborador`,
+        texto: 'Receita mensal ÷ total de colaboradores. Regra de bolso desta calculadora: abaixo de R$ 15 mil é Ruim; de R$ 15 mil a R$ 25 mil é OK; acima de R$ 25 mil é Bom.',
+        pontos: [leitura],
       },
+      paineis: [
+        {
+          tipo: 'barras',
+          titulo: 'Receita por colaborador e faixas de referência',
+          formato: 'brl',
+          nota: 'Valores mensais por colaborador. A faixa Bom começa acima de R$ 25 mil.',
+          dados: [
+            { rotulo: 'Seu resultado', valor: porColaborador, tom: 'cheio' },
+            { rotulo: 'Entrada na faixa OK', valor: 15000, tom: 'hachurado' },
+            { rotulo: 'Limite superior da faixa OK', valor: 25000, tom: 'pontilhado' },
+          ],
+        },
+        {
+          tipo: 'tabela',
+          titulo: 'Como o resultado é classificado',
+          colunas: ['Classificação', 'Receita mensal por colaborador'],
+          linhas: [
+            [tipo === 'bad' ? 'Ruim · seu resultado' : 'Ruim', 'Abaixo de R$ 15.000'],
+            [tipo === 'warn' ? 'OK · seu resultado' : 'OK', 'De R$ 15.000 a R$ 25.000, inclusive'],
+            [tipo === 'good' ? 'Bom · seu resultado' : 'Bom', 'Acima de R$ 25.000'],
+          ],
+        },
+      ],
     };
   },
 });

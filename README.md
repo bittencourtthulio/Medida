@@ -67,6 +67,16 @@ Peça ao Claude Code ("cria uma calculadora de X"): a skill `nova-calculadora` s
 
 Cada uma devolve um veredito, indicadores e um dashboard (gráficos e tabelas). Nenhuma usa benchmark inventado: limiares são matemática ou "regra de bolso" dita como tal no veredito. Preços de IA e nuvem vêm sempre de campos preenchidos pelo usuário.
 
+## Custo por colaborador
+
+Em **Finanças**, acesse `app.html#/calc/custo-por-colaborador`. Preencha apenas **receita mensal** e **total de colaboradores**. O resultado é a receita mensal dividida pelo total de colaboradores, atualizado a cada alteração:
+
+- **Ruim:** abaixo de R$ 15.000 por colaborador.
+- **OK:** de R$ 15.000 a R$ 25.000 por colaborador, inclusive.
+- **Bom:** acima de R$ 25.000 por colaborador.
+
+Essas faixas são a regra de bolso da calculadora. Receita zero resulta em R$ 0 por colaborador (Ruim); colaboradores devem ser um número inteiro maior que zero.
+
 ## Nível de demanda do suporte
 
 Em **Entrega e Operação**, acesse `app.html#/calc/nivel-de-demanda-do-suporte`. Informe colaboradores, WIP simultâneo por atendente, média de tickets por dia, duração média do ticket em minutos e horas líquidas de atendimento por pessoa por dia.
