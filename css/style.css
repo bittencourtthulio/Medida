@@ -454,6 +454,16 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .q-menu-painel small { margin-left: auto; color: var(--mute); font-size: 10px; }
 .q-menu-ajuda { margin: 4px 8px; color: var(--mute); font-size: 11px; }
 .q-formas { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+.q-inserir-painel, .q-conexao { width: 340px; max-height: min(560px, calc(100dvh - var(--q-menu-y, 80px) - 12px)); }
+.q-biblioteca { margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.q-busca-elementos { position: sticky; top: 0; z-index: 2; width: 100%; padding: 9px 10px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper); color: var(--ink); font: 12px var(--display); }
+.q-elementos-grupo + .q-elementos-grupo { margin-top: 12px; }
+.q-elementos-lista { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2px; }
+.q-elementos-lista button { min-width: 0; }
+.qn.estrategia { display: flex; align-items: center; justify-content: center; padding: 18px; }
+.q-conteudo { width: 100%; }
+.q-simbolo { display: block; width: 32px; height: 32px; margin: 0 auto 10px; }
+.q-elementos-lista .q-simbolo { margin: 0; }
 .q-salvo { font-size: 12px; color: var(--mute); }
 .q-rodape { display: flex; flex: 0 0 auto; align-items: center; gap: 16px; padding: 9px 3px 0; }
 #qSalvo { font-size: 10px; }
@@ -472,7 +482,7 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 #qFonte { width: 40px; min-width: 40px; height: 30px; padding: 3px 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font: 500 12px var(--display); font-variant-numeric: tabular-nums; text-align: center; appearance: textfield; }
 #qFonte::-webkit-inner-spin-button, #qFonte::-webkit-outer-spin-button { appearance: none; margin: 0; }
 #qFonte:disabled { opacity: .3; }
-#quadro [data-alinhar][aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+#quadro [data-alinhar][aria-pressed="true"], #quadro [data-alinhar-vertical][aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .q-barra select { width: 100%; font: inherit; font-size: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
 #quadro .q-cores { gap: 1px; padding: 0; border: 0; }
 #quadro .q-cor { width: 24px; height: 28px; border-radius: 6px; }
@@ -506,6 +516,11 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .qn .qf polygon { fill: var(--q-fundo, color-mix(in srgb, var(--ink) 8%, transparent)); stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .qn .qt { position: relative; z-index: 1; }
 .qn.triangulo .qt { margin-top: 26%; max-width: 58%; }
+.qn[data-vertical] { display: flex; justify-content: center; }
+.qn[data-vertical="top"] { align-items: flex-start; }
+.qn[data-vertical="center"] { align-items: center; }
+.qn[data-vertical="bottom"] { align-items: flex-end; }
+.qn[data-vertical] .qt { width: 100%; max-width: 100%; margin-top: 0; flex-shrink: 0; }
 .qn.triangulo .qh[data-lado="direita"] { left: 75%; }
 .qn.triangulo .qh[data-lado="esquerda"] { left: 25%; }
 .qn .qr { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; background: var(--paper); border: 2px solid var(--ink); border-radius: 3px; cursor: nwse-resize; opacity: 0; transition: opacity .12s; z-index: 2; }

@@ -116,6 +116,11 @@
         <button class="q-btn q-icon" type="button" data-alinhar="center" title="Centralizar texto" aria-label="Centralizar texto" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M7 10h10M4 15h16M7 20h10"/></svg><span>Centralizar</span></button>
         <button class="q-btn q-icon" type="button" data-alinhar="right" title="Alinhar texto à direita" aria-label="Alinhar à direita" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M10 10h10M4 15h16M10 20h10"/></svg><span>Direita</span></button>
       </div>
+      <div class="q-grupo" role="group" aria-label="Alinhamento vertical do texto">
+        <button class="q-btn q-icon" type="button" data-alinhar-vertical="top" title="Alinhar texto no topo" aria-label="Alinhar no topo" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16M7 8v12M12 8v8M17 8v12"/></svg><span>Topo</span></button>
+        <button class="q-btn q-icon" type="button" data-alinhar-vertical="center" title="Centralizar texto na vertical" aria-label="Centralizar na vertical" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M7 4v16M12 7v10M17 4v16"/></svg><span>Centro vertical</span></button>
+        <button class="q-btn q-icon" type="button" data-alinhar-vertical="bottom" title="Alinhar texto embaixo" aria-label="Alinhar embaixo" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 4v12M12 8v8M17 4v12"/></svg><span>Embaixo</span></button>
+      </div>
       <div class="q-grupo" role="group" aria-label="Inserir no quadro">
         <details class="q-menu" id="qInserirMenu">
           <summary class="q-btn q-icon" aria-label="Inserir formas e modelos" title="Inserir formas e modelos"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="11" height="11" rx="2"/><circle cx="16.5" cy="16.5" r="4.5"/></svg><span>Inserir</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary>
@@ -129,6 +134,7 @@
               <button type="button" data-add="nota"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v12l-5 6H4ZM15 21v-6h5"/></svg>Nota</button>
               <button type="button" data-add="texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6V3h16v3M12 3v18M8 21h8"/></svg>Texto</button>
             </div>
+            <div id="qElementos"></div>
             <label class="q-menu-titulo" for="qModelo">Modelos prontos</label>
             <select id="qModelo" aria-label="Inserir modelo"><option value="">Escolher modelo…</option><option value="funil">Funil de vendas</option><option value="unit">Unit economics</option><option value="retencao">Receita recorrente</option></select>
           </div>
@@ -248,6 +254,7 @@
 <script src="js/core.js"></script>
 <script src="js/graficos.js"></script>
 <script src="js/manifest.js"></script>
+<script src="js/quadro-elementos.js"></script>
 <script src="js/quadro-exportar.js"></script>
 <script src="js/quadro.js"></script>
 <script src="js/cenarios.js"></script>

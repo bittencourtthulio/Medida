@@ -13,13 +13,134 @@ async function setup(page,file='app.html'){
  await page.route('**/*',route=>{const p=new URL(route.request().url()).pathname;let body='',contentType='text/plain';
  if(p==='/app.html'){body=fs.readFileSync(ROOT+'/app.html','utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'');contentType='text/html';}
  else if(p==='/tablet.html'){body=fs.readFileSync(ROOT+'/tablet.html','utf8').replace(/<script[^>]+src="(?:js\/config.js|js\/sala.js|\/js\/pwa.js)"[^>]*><\/script>/g,'');contentType='text/html';}
- else if(['/css/style.css','/js/quadro.js'].includes(p)){body=fs.readFileSync(ROOT+p,'utf8');contentType=p.endsWith('.css')?'text/css':'text/javascript';}
+ else if(['/css/style.css','/js/quadro.js','/js/quadro-elementos.js'].includes(p)){body=fs.readFileSync(ROOT+p,'utf8');contentType=p.endsWith('.css')?'text/css':'text/javascript';}
  else return route.fulfill({status:204,body:''});return route.fulfill({contentType,body});});
  await page.goto('http://quadro.test/'+file+(file==='app.html'?'#/quadro':'#s=test&k=test'));
 }
 const legacy={nos:[{id:'box',tipo:'caixa',x:150,y:120,w:200,h:80,texto:'Página original'},{id:'note',tipo:'nota',x:430,y:180,w:170,h:110,texto:'Anotações\nDuas linhas'},{id:'tri',tipo:'triangulo',x:750,y:210,w:180,h:150,texto:'Triângulo'},{id:'txt',tipo:'texto',x:-450,y:-150,texto:'Fora da vista'}],setas:[{id:'s',a:'box',b:'note'}],tracos:[{id:'legacy',p:[0,0,100,0],w:3}],vista:{x:0,y:0,k:1}};
-async function mount(page){for(const f of ['js/quadro-exportar.js','js/quadro.js'])await page.addScriptTag({content:fs.readFileSync(f,'utf8')});await page.evaluate(()=>{document.getElementById('boot').remove();for(const id of ['authWrap','topAuth'])document.getElementById(id).hidden=true;for(const id of ['shell','quadro'])document.getElementById(id).hidden=false;document.querySelector('#shell main.page').classList.add('larga');Quadro.abrir();});}
+async function mount(page){for(const f of ['js/quadro-elementos.js','js/quadro-exportar.js','js/quadro.js'])await page.addScriptTag({content:fs.readFileSync(f,'utf8')});await page.evaluate(()=>{document.getElementById('boot').remove();for(const id of ['authWrap','topAuth'])document.getElementById(id).hidden=true;for(const id of ['shell','quadro'])document.getElementById(id).hidden=false;document.querySelector('#shell main.page').classList.add('larga');Quadro.abrir();});}
 async function draw(page,color,y=450){await page.getByRole('button',{name:color,exact:true}).click();const r=await page.locator('#qTela').boundingBox();await page.mouse.move(r.x+120,r.y+y);await page.mouse.down();await page.mouse.move(r.x+350,r.y+y);await page.mouse.up();}
+async function testarElementos(browser,errors) {
+ const p=await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});
+ p.on('pageerror',e=>errors.push(e.message)); await setup(p); await mount(p);
+ const catalogo=await p.evaluate(()=>ElementosQuadro.lista.map(({id,nome})=>({id,nome})));
+ assert.equal(catalogo.length,28); assert.equal(new Set(catalogo.map(e=>e.id)).size,28);
+ const menu=p.locator('#qInserirMenu'),busca=p.locator('#qElementos input');
+ async function inserir(id) {
+   await menu.locator('summary').click(); await busca.fill(id==='google-ads'?'adwords':catalogo.find(e=>e.id===id).nome);
+   await menu.locator(`[data-elemento="${id}"]`).click();
+   return p.evaluate(()=>Quadro.estado().nos.at(-1));
+ }
+ // Todos os elementos entram pelo menu real com símbolo, rótulo e quatro conectores.
+ for(const {id,nome} of catalogo) {
+   const n=await inserir(id); assert.equal(n.tipo,'estrategia'); assert.equal(n.elemento,id); assert.equal(n.texto,nome);
+   const e=p.locator(`.qn[data-id="${n.id}"]`);
+   assert.equal(await e.locator('.q-simbolo').count(),1); assert.equal(await e.locator('.qh').count(),4);
+   assert.equal(await p.locator('[data-alinhar-vertical="center"]').getAttribute('aria-pressed'),'true');
+   await p.locator('#qDesfazer').click(); assert.equal(await p.locator('.qn').count(),0);
+ }
+ await menu.locator('summary').click(); await busca.fill('zzzinexistente');
+ assert.equal(await menu.getByRole('status').textContent(),'Nenhum elemento encontrado.');
+ assert.equal(await menu.locator('[data-elemento]:visible').count(),0);
+ await busca.fill(''); await p.screenshot({path:join(outputDir,'biblioteca.png')}); await p.keyboard.press('Escape');
+ const amostra=['pessoa','email','pagina-de-vendas','instagram','google-ads','youtube'];
+ for(let i=0;i<amostra.length;i++) {
+   const n=await inserir(amostra[i]); await p.locator('#qSelecionar').click();
+   const e=p.locator(`.qn[data-id="${n.id}"]`),r=await e.boundingBox(),tela=await p.locator('#qTela').boundingBox();
+   await p.mouse.move(r.x+r.width/2,r.y+r.height/2); await p.mouse.down();
+   await p.mouse.move(tela.x+60+i%3*300+90,tela.y+70+Math.floor(i/3)*260+60,{steps:5}); await p.mouse.up();
+ }
+ let estado=await p.evaluate(()=>Quadro.estado());
+ const a=estado.nos[0],b=estado.nos[1];
+ const h=await p.locator(`.qn[data-id="${a.id}"] .qh[data-lado="direita"]`).boundingBox();
+ const destino=await p.locator(`.qn[data-id="${b.id}"]`).boundingBox();
+ await p.mouse.move(h.x+7,h.y+7); await p.mouse.down(); await p.mouse.move(destino.x+90,destino.y+60,{steps:5}); await p.mouse.up();
+ assert.equal(await p.locator('#qSetas .qs').count(),1);
+ // Criação de outro símbolo ao soltar uma conexão em espaço vazio.
+ const c=await p.locator(`.qn[data-id="${b.id}"] .qh[data-lado="baixo"]`).boundingBox(),tela=await p.locator('#qTela').boundingBox();
+ await p.mouse.move(c.x+7,c.y+7); await p.mouse.down(); await p.mouse.move(tela.x+450,tela.y+650,{steps:5}); await p.mouse.up();
+ const conectar=p.getByRole('menu',{name:'Criar elemento conectado'});
+ await conectar.getByRole('searchbox',{name:'Buscar elementos prontos'}).fill('meta');
+ await conectar.getByRole('menuitem',{name:'Meta',exact:true}).click();
+ assert.equal(await p.locator('.qn.estrategia .q-simbolo').count(),7); assert.equal(await p.locator('#qSetas .qs').count(),2);
+ const ultimo=await p.evaluate(()=>Quadro.estado().nos.at(-1)); assert.equal(ultimo.elemento,'meta');
+ const meta=p.locator(`.qn[data-id="${ultimo.id}"]`);
+ await meta.locator('.qt').fill('Campanha Meta'); await p.getByRole('button',{name:'Azul',exact:true}).click();
+ await p.locator('#qFonte').fill('20'); await p.locator('#qFonte').press('Enter');
+ await p.locator('[data-alinhar="right"]').click(); await p.locator('[data-alinhar-vertical="bottom"]').click();
+ const editado=await p.evaluate(()=>Quadro.estado().nos.at(-1));
+ assert.equal(editado.texto,'Campanha Meta'); assert.equal(editado.cor,'#2563eb'); assert.equal(editado.fonte,20);
+ assert.equal(editado.alinhamento,'right'); assert.equal(editado.vertical,'bottom');
+ await p.waitForFunction(()=>document.getElementById('qSalvo').textContent==='Salvo neste navegador');
+ await p.reload(); await mount(p); estado=await p.evaluate(()=>Quadro.estado());
+ assert.equal(estado.nos.length,7); assert.equal(await p.locator('.qn.estrategia .q-simbolo').count(),7);
+ await p.evaluate(()=>{
+   window.iconesExportados=0; const original=CanvasRenderingContext2D.prototype.drawImage;
+   CanvasRenderingContext2D.prototype.drawImage=function(img,...args){if(img instanceof HTMLImageElement && img.src.startsWith('data:image/svg+xml'))iconesExportados++;return original.call(this,img,...args);};
+ });
+ const download=p.waitForEvent('download');await p.locator('#qExportMenu summary').click();await p.locator('#qExportarPagina').click();
+ await (await download).saveAs(join(outputDir,'estrategia.jpg')); assert.equal(await p.evaluate(()=>iconesExportados),7);
+ await p.screenshot({path:join(outputDir,'estrategia.png')});
+ await p.evaluate(s=>Quadro.ver(s),estado); assert.equal(await p.locator('.qn.estrategia .q-simbolo').count(),7);
+ console.log('✓ Biblioteca: 28 elementos pelo menu, busca e sinônimos, quatro conectores, criação conectada, texto/cores/fonte/alinhamentos, desfazer, recarga, sete símbolos no JPEG e visualização ao vivo.');
+ await p.close(); return estado;
+}
+async function testarVertical(browser,errors) {
+ const p=await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});
+ p.on('pageerror',e=>errors.push(e.message)); await setup(p);
+ const tipos=['caixa','nota','circulo','losango','triangulo','texto'];
+ const nos=tipos.map((tipo,i)=>({id:tipo,tipo,x:50+i%3*310,y:50+Math.floor(i/3)*340,w:240,h:260,fonte:20,alinhamento:'right',texto:'Linha longa\ncurta'}));
+ await p.evaluate(nos=>localStorage.setItem('medida_quadro_v1',JSON.stringify({nos,setas:[],tracos:[],vista:{x:0,y:0,k:1}})),nos); await mount(p);
+ const elemento=tipo=>p.locator(`.qn[data-id="${tipo}"]`),botao=v=>p.locator(`[data-alinhar-vertical="${v}"]`);
+ async function confere(tipo,vertical) {
+   const m=await elemento(tipo).evaluate(e=>{
+     const b=e.getBoundingClientRect(),t=e.querySelector('.qt').getBoundingClientRect(),css=getComputedStyle(e),k=b.height/e.offsetHeight;
+     return {y:(t.top-b.top)/k,h:t.height/k,top:parseFloat(css.paddingTop)+parseFloat(css.borderTopWidth),bottom:e.offsetHeight-parseFloat(css.paddingBottom)-parseFloat(css.borderBottomWidth)};
+   });
+   const atual=vertical==='top'?m.y:vertical==='bottom'?m.y+m.h:m.y+m.h/2;
+   const esperado=vertical==='top'?m.top:vertical==='bottom'?m.bottom:(m.top+m.bottom)/2;
+   assert.ok(Math.abs(atual-esperado)<2,`${tipo}: posição real deve alinhar ${vertical}`);
+   assert.ok(m.y>=m.top-2 && m.y+m.h<=m.bottom+2,`${tipo}: texto deve caber na área interna`);
+ }
+ assert.equal(await botao('top').isDisabled(),true);
+ for(const tipo of tipos) {
+   await elemento(tipo).click();
+   assert.equal(await botao(['circulo','losango','triangulo'].includes(tipo)?'center':'top').getAttribute('aria-pressed'),'true');
+   for(const vertical of ['top','center','bottom']) {
+     await botao(vertical).click(); await confere(tipo,vertical);
+     assert.equal(await elemento(tipo).locator('.qt').evaluate(e=>getComputedStyle(e).textAlign),'right');
+     assert.equal(await botao(vertical).getAttribute('aria-pressed'),'true');
+   }
+ }
+ // A altura acompanha uma fonte maior dentro da área segura da forma.
+ await elemento('triangulo').click(); await p.locator('#qFonte').fill('40'); await p.locator('#qFonte').press('Enter');
+ await confere('triangulo','bottom'); await p.locator('#qDesfazer').click(); await confere('triangulo','bottom');
+ await elemento('caixa').dblclick(); await elemento('caixa').locator('.qt').fill('Texto novo\ncurto'); await botao('top').click();
+ assert.equal(await p.evaluate(()=>Quadro.estado().nos[0].texto),'Texto novo\ncurto');
+ await p.locator('#qDesfazer').click(); await confere('caixa','bottom');
+ for(let i=0;i<tipos.length;i++){await elemento(tipos[i]).click();await botao(['top','center','bottom'][i%3]).click();}
+ await p.locator('#qCaneta').click(); assert.equal(await botao('center').isDisabled(),true);
+ await p.locator('#qSelecionar').click(); assert.equal(await botao('bottom').getAttribute('aria-pressed'),'true');
+ await p.locator('#qNovaPagina').click(); assert.equal(await botao('top').isDisabled(),true); await p.locator('#qAnterior').click();
+ await p.waitForFunction(()=>document.getElementById('qSalvo').textContent==='Salvo neste navegador'); await p.reload(); await mount(p);
+ for(let i=0;i<tipos.length;i++)await confere(tipos[i],['top','center','bottom'][i%3]);
+ const esperadas=await p.locator('.qn').evaluateAll(es=>es.map(e=>{
+   const t=e.querySelector('.qt').firstChild,r=document.createRange();r.setStart(t,0);r.setEnd(t,1);
+   return r.getBoundingClientRect().top-e.getBoundingClientRect().top+parseFloat(e.style.top);
+ }));
+ await p.evaluate(()=>{
+   window.linhasVerticais=[];const original=CanvasRenderingContext2D.prototype.fillText;
+   CanvasRenderingContext2D.prototype.fillText=function(texto,x,y,...args){linhasVerticais.push(y-this.measureText(texto).fontBoundingBoxAscent);return original.call(this,texto,x,y,...args);};
+ });
+ const download=p.waitForEvent('download'); await p.locator('#qExportMenu summary').click(); await p.locator('#qExportarPagina').click();
+ await (await download).saveAs(join(outputDir,'vertical.jpg'));
+ const exportadas=await p.evaluate(()=>linhasVerticais); assert.equal(exportadas.length,12);
+ esperadas.forEach((y,i)=>assert.ok(Math.abs(y-exportadas[i*2])<2,'JPEG conserva a posição vertical do texto'));
+ await elemento('nota').click(); await p.screenshot({path:join(outputDir,'vertical.png')});
+ const estado=await p.evaluate(()=>Quadro.estado()); await p.evaluate(s=>Quadro.ver(s),estado);
+ for(let i=0;i<tipos.length;i++)await confere(tipos[i],['top','center','bottom'][i%3]);
+ console.log('✓ Vertical: seis tipos, topo/centro/embaixo, área interna, fonte, alinhamento horizontal independente, edição, desfazer, páginas, recarga, JPEG e visualização ao vivo.');
+}
 async function testarAlinhamento(browser,errors) {
  const p=await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});
  p.on('pageerror',e=>errors.push(e.message)); await setup(p);
@@ -185,7 +306,7 @@ async function testarConexoes(browser, errors) {
    await comeca(lado); await moveMundo(x,y); await p.mouse.up();
    assert.equal(await menu.isVisible(),true);
    assert.equal(await p.locator('#qTemp').evaluate(e=>!e.hasAttribute('hidden') && getComputedStyle(e).display!=='none'),true);
-   assert.equal(await menu.getByRole('menuitem').count(),7);
+   assert.equal(await menu.getByRole('menuitem').count(),35);
    assert.equal(await snapshot(),antes,'Abrir o menu ainda não deve criar elementos');
    if(tipo==='circulo') await p.screenshot({path:join(outputDir,'conexao-menu.png')});
    await menu.getByRole('menuitem',{name:nome,exact:true}).click();
@@ -347,13 +468,16 @@ async function testarConexoes(browser, errors) {
  console.log('✓ Elementos: seis tipos, preenchimento exato, contraste nos dois temas, seleção, restauração, desfazer, edição, caneta independente, páginas, recarga, JPEG e visualização ao vivo.');
  await testarFontes(browser,errors);
  await testarAlinhamento(browser,errors);
+ await testarVertical(browser,errors);
+ const estrategia=await testarElementos(browser,errors);
  await testarConexoes(browser,errors);
  // Tablet segue a página, encerra um traço em curso na página correta e limita limpar/desfazer.
  const tablet=await browser.newPage({viewport:{width:1024,height:768},colorScheme:'dark'});tablet.on('pageerror',e=>errors.push(e.message));await tablet.addInitScript(()=>{window.sent=[];window.removed=[];window.erasers=[];let key=0;window.Sala={disponivel:true,tablet:async()=>({novaChave:()=>String(++key),gravar:async(k,t)=>sent.push({id:k,p:[...t.p],w:t.w,cor:t.cor,pagina:t.pagina}),apagar:async k=>removed.push(k),borracha:async(p,r,pagina)=>erasers.push({p,r,pagina}),aoVivo:cb=>window.receiveVista=cb}),ouvirQuadro:(_,cb)=>window.receive=cb};});await setup(tablet,'tablet.html');await tablet.waitForFunction(()=>window.receive);
- const a={nos:estadoColorido.nos.map(n=>({...n,fonte:32,alinhamento:'right'})),setas:[],tracos:[],pagina:first,numeroPagina:1,totalPaginas:2,area:{x:0,y:0,w:1024,h:768,pagina:first}};const b={...a,pagina:second,numeroPagina:2,area:{...a.area,pagina:second}};
- await tablet.evaluate(a=>receive(a),a);assert.deepEqual(await estilo(tablet,'triangulo'),await estilo(colorPage,'triangulo'));assert.equal(await tablet.locator('.qn[data-id="triangulo"] .qt').evaluate(e=>getComputedStyle(e).fontSize),'32px');assert.equal(await tablet.locator('.qn[data-id="triangulo"] .qt').evaluate(e=>getComputedStyle(e).textAlign),'right');await tablet.getByRole('button',{name:'Azul',exact:true}).click();await tablet.mouse.move(100,400);await tablet.mouse.down();await tablet.mouse.move(300,400);await tablet.evaluate(b=>receive(b),b);await tablet.mouse.up();assert.equal(await tablet.evaluate(()=>sent.at(-1).pagina),first);assert.equal(await tablet.locator('#desf').isDisabled(),true);
+ const a={nos:estadoColorido.nos.map(n=>({...n,fonte:32,alinhamento:'right',vertical:'bottom'})).concat(estrategia.nos.find(n=>n.elemento==='instagram')),setas:[],tracos:[],pagina:first,numeroPagina:1,totalPaginas:2,area:{x:0,y:0,w:1024,h:768,pagina:first}};const b={...a,pagina:second,numeroPagina:2,area:{...a.area,pagina:second}};
+ await tablet.evaluate(a=>receive(a),a);assert.deepEqual(await estilo(tablet,'triangulo'),await estilo(colorPage,'triangulo'));assert.equal(await tablet.locator('.qn[data-id="triangulo"] .qt').evaluate(e=>getComputedStyle(e).fontSize),'32px');assert.equal(await tablet.locator('.qn[data-id="triangulo"] .qt').evaluate(e=>getComputedStyle(e).textAlign),'right');assert.equal(await tablet.locator('.qn[data-id="triangulo"]').evaluate(e=>getComputedStyle(e).alignItems),'flex-end');await tablet.getByRole('button',{name:'Azul',exact:true}).click();await tablet.mouse.move(100,400);await tablet.mouse.down();await tablet.mouse.move(300,400);await tablet.evaluate(b=>receive(b),b);await tablet.mouse.up();assert.equal(await tablet.evaluate(()=>sent.at(-1).pagina),first);assert.equal(await tablet.locator('#desf').isDisabled(),true);
  await tablet.getByRole('button',{name:'Vermelho',exact:true}).click();await tablet.mouse.move(100,400);await tablet.mouse.down();await tablet.mouse.move(300,400);await tablet.mouse.up();assert.equal(await tablet.evaluate(()=>sent.at(-1).pagina),second);await tablet.locator('#limpa').click();assert.deepEqual(await tablet.evaluate(()=>removed),['2']);
  await tablet.evaluate(a=>receive(a),a);assert.equal(await tablet.locator('#desf').isDisabled(),false);await tablet.locator('#desf').click();assert.deepEqual(await tablet.evaluate(()=>removed),['2','1']);assert.match(await tablet.locator('#mPagina').textContent(),/Página 1 de 2/);
- await page.screenshot({path:join(outputDir, 'interface.png')});assert.deepEqual(errors,[]);console.log('✓ Tablet: troca durante desenho, identificação de página, limpar/desfazer isolados e indicador de página.');
+ assert.equal(await tablet.locator('.qn.estrategia .q-simbolo').count(),1);
+ await page.screenshot({path:join(outputDir, 'interface.png')});assert.deepEqual(errors,[]);console.log('✓ Tablet: troca durante desenho, identificação de página, limpar/desfazer isolados, indicador de página e elementos estratégicos.');
  console.log('Artefatos de verificação: '+outputDir);
-}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+}finally{await browser.close();}})().then(()=>process.exit(0),e=>{console.error(e);process.exit(1);});

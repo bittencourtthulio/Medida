@@ -15,8 +15,9 @@
     e.style.setProperty('--q-alinhamento', Quadro.alinhamentoNo(n));
     if (n.w) Object.assign(e.style, { width: n.w + 'px', minWidth: '0', maxWidth: 'none' });
     if (n.h) Object.assign(e.style, { height: n.h + 'px', minHeight: '0' });
-    const t = document.createElement('div'); t.className = 'qt'; t.textContent = n.texto;
-    e.append(t); container.append(e);
+    e.append(Quadro.conteudoNo(n)); container.append(e);
+    Quadro.aplicaVertical(e, n);
+    const t = e.querySelector('.qt');
     const box = e.getBoundingClientRect(), css = getComputedStyle(t), linhas = [];
     const text = t.firstChild, range = document.createRange();
     if (text) for (let i = 0; i < text.length; i++) {
@@ -28,7 +29,9 @@
       if (ultima && Math.abs(ultima.y - y) < 1) { ultima.texto += text.textContent[i]; ultima.direita = x + r.width; }
       else linhas.push({ texto: text.textContent[i], x, y, direita: x + r.width, h: r.height });
     }
-    const m = { ...n, cores, w: box.width, h: box.height, linhas, font: `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`, tamanho: parseFloat(css.fontSize), espacamento: css.letterSpacing };
+    const simbolo = e.querySelector('.q-simbolo'), icone = simbolo?.getBoundingClientRect();
+    const m = { ...n, cores, w: box.width, h: box.height, linhas, font: `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`, tamanho: parseFloat(css.fontSize), espacamento: css.letterSpacing,
+      icone: icone ? { x: n.x + icone.left - box.left, y: n.y + icone.top - box.top, w: icone.width, h: icone.height } : null };
     e.remove(); return m;
   }
 
@@ -45,6 +48,12 @@
     const container = document.createElement('div'); container.className = 'q-export-medida'; document.body.append(container);
     let nos;
     try { nos = pagina.nos.map(n => medir(n, container)); } finally { container.remove(); }
+    const icones = await Promise.all(nos.map(async n => {
+      if (!n.icone) return null;
+      const img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ElementosQuadro.svg(n.elemento, n.cores?.texto || INK));
+      await img.decode(); return img;
+    }));
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     const inclui = (x, y, margem = 0) => { x0 = Math.min(x0, x - margem); y0 = Math.min(y0, y - margem); x1 = Math.max(x1, x + margem); y1 = Math.max(y1, y + margem); };
     nos.forEach(n => {
@@ -69,13 +78,14 @@
       c.lineTo(q.x - 14 * Math.cos(angulo - .45), q.y - 14 * Math.sin(angulo - .45));
       c.lineTo(q.x - 14 * Math.cos(angulo + .45), q.y - 14 * Math.sin(angulo + .45)); c.closePath(); c.fill();
     });
-    nos.forEach(n => {
+    nos.forEach((n, i) => {
       if (n.tipo !== 'texto' || n.cores) {
         caminhoNo(c, n);
         c.fillStyle = n.cores?.fundo || (['circulo', 'losango', 'triangulo'].includes(n.tipo) ? 'rgba(10,10,10,.08)' : (n.tipo === 'nota' ? '#f3f3f3' : '#ffffff'));
         c.fill(); c.strokeStyle = INK; c.lineWidth = 2;
         if (n.tipo !== 'texto') { c.setLineDash(n.tipo === 'nota' ? [6, 4] : []); c.stroke(); c.setLineDash([]); }
       }
+      if (icones[i]) c.drawImage(icones[i], n.icone.x, n.icone.y, n.icone.w, n.icone.h);
       c.font = n.font; c.fillStyle = n.cores?.texto || INK; c.textBaseline = 'alphabetic';
       if ('letterSpacing' in c) c.letterSpacing = n.espacamento === 'normal' ? '0px' : n.espacamento;
       n.linhas.forEach(l => { const metrica = c.measureText(l.texto); c.fillText(l.texto, l.x, l.y + (metrica.fontBoundingBoxAscent || n.tamanho * .8)); });

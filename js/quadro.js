@@ -58,6 +58,7 @@
     atualizaCores();
     atualizaFonte();
     atualizaAlinhamento();
+    atualizaVertical();
   }
   function volta() {
     fechaConexao();
@@ -191,9 +192,12 @@
   }
 
   const FORMAS = { losango: '50,0 100,50 50,100 0,50', triangulo: '50,0 100,100 0,100' };
-  const TAMANHO = { caixa: [160, 60], nota: [170, 110], circulo: [140, 140], losango: [180, 120], triangulo: [170, 140] };
+  const TAMANHO = { caixa: [160, 60], nota: [170, 110], circulo: [140, 140], losango: [180, 120], triangulo: [170, 140], estrategia: [180, 120] };
   const LADOS = { topo: [0, -1], direita: [1, 0], baixo: [0, 1], esquerda: [-1, 0] };
   const ALINHAMENTOS = ['left', 'center', 'right'];
+  const VERTICAIS = ['top', 'center', 'bottom'];
+  // Retângulo interno que cabe no contorno: margem horizontal, superior e inferior.
+  const ESPACO_TEXTO = { circulo: [.16, .16, .16], losango: [.25, .25, .25], triangulo: [.25, .5, .1] };
   // O fundo usa a cor exata; o texto recebe a cor com maior contraste.
   function coresNo(n) {
     if (!/^#[0-9a-f]{6}$/i.test(n.cor)) return null;
@@ -241,14 +245,7 @@
     foto(); n.fonte = fonte;
     const e = mundo().querySelector(`.qn[data-id="${n.id}"]`);
     e.style.setProperty('--q-fonte', fonte + 'px');
-    // Conserva o espaço já dimensionado e aumenta a altura se o texto precisar.
-    if (n.tipo !== 'texto' || n.h) {
-      const t = e.querySelector('.qt'), css = getComputedStyle(e), texto = getComputedStyle(t);
-      const extra = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((s, k) => s + parseFloat(css[k]), 0)
-        + parseFloat(texto.marginTop) + parseFloat(texto.marginBottom);
-      n.h = Math.max(e.offsetHeight, Math.ceil(t.scrollHeight + extra));
-      tamanho(e, n);
-    }
+    ajustaAlturaTexto(e, n);
     setas(); salvar();
   }
   function alinhamentoNo(n) {
@@ -272,9 +269,98 @@
     mundo().querySelector(`.qn[data-id="${n.id}"]`).style.setProperty('--q-alinhamento', alinhamento);
     setas(); salvar();
   }
+  function verticalNo(n) { return VERTICAIS.includes(n.vertical) ? n.vertical : null; }
+  function verticalAtual(n) { return verticalNo(n) || (ESPACO_TEXTO[n.tipo] || simboloNo(n) ? 'center' : 'top'); }
+  function atualizaVertical() {
+    const botoes = $('quadro')?.querySelectorAll('[data-alinhar-vertical]');
+    if (!botoes) return;
+    const n = noSelecionado();
+    botoes.forEach(b => {
+      b.disabled = !n;
+      b.setAttribute('aria-pressed', String(!!n && b.dataset.alinharVertical === verticalAtual(n)));
+    });
+  }
+  function aplicaVertical(e, n) {
+    const vertical = verticalNo(n);
+    if (!vertical) return;
+    e.dataset.vertical = vertical;
+    const espaco = ESPACO_TEXTO[n.tipo];
+    if (!espaco) return;
+    const w = e.offsetWidth, h = e.offsetHeight;
+    e.style.paddingLeft = e.style.paddingRight = Math.max(22, w * espaco[0]) + 'px';
+    e.style.paddingTop = Math.max(22, h * espaco[1]) + 'px';
+    e.style.paddingBottom = Math.max(22, h * espaco[2]) + 'px';
+  }
+  function ajustaAlturaTexto(e, n) {
+    if (n.tipo === 'texto' && !n.h) return;
+    const t = e.querySelector('.q-conteudo') || e.querySelector('.qt'), css = getComputedStyle(e), texto = getComputedStyle(t);
+    const conteudo = t.scrollHeight + parseFloat(texto.marginTop) + parseFloat(texto.marginBottom)
+      + parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
+    const espaco = verticalNo(n) && ESPACO_TEXTO[n.tipo];
+    const minimo = espaco
+      ? Math.max(conteudo + 44, (conteudo + 22) / (1 - espaco[1]), (conteudo + 22) / (1 - espaco[2]), conteudo / (1 - espaco[1] - espaco[2]))
+      : conteudo + parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
+    n.h = Math.max(e.offsetHeight, Math.ceil(minimo));
+    tamanho(e, n);
+  }
+  function alteraVertical(vertical) {
+    const n = noSelecionado();
+    if (!n || !VERTICAIS.includes(vertical)) return;
+    encerraEdicao();
+    if (verticalNo(n) === vertical) return;
+    foto(); n.vertical = vertical;
+    const e = mundo().querySelector(`.qn[data-id="${n.id}"]`);
+    aplicaVertical(e, n); ajustaAlturaTexto(e, n);
+    setas(); salvar();
+  }
   function tamanho(e, n) {
     if (n.w) { e.style.width = n.w + 'px'; e.style.minWidth = '0'; e.style.maxWidth = 'none'; }
     if (n.h) { e.style.height = n.h + 'px'; e.style.minHeight = '0'; }
+    if (e.isConnected) aplicaVertical(e, n);
+  }
+
+  /* ---------- biblioteca de elementos estratégicos ---------- */
+  function simboloNo(n) { return n.tipo === 'estrategia' ? window.ElementosQuadro?.obter(n.elemento) : null; }
+  function conteudoNo(n) {
+    const t = document.createElement('div'); t.className = 'qt'; t.textContent = n.texto;
+    if (!simboloNo(n)) return t;
+    const bloco = document.createElement('div'); bloco.className = 'q-conteudo';
+    bloco.innerHTML = ElementosQuadro.svg(n.elemento); bloco.append(t); return bloco;
+  }
+  function criaBiblioteca(conectar = false) {
+    const biblioteca = document.createElement('div'); biblioteca.className = 'q-biblioteca';
+    const busca = document.createElement('input'); busca.type = 'search'; busca.className = 'q-busca-elementos';
+    busca.placeholder = 'Buscar elementos prontos…'; busca.setAttribute('aria-label', 'Buscar elementos prontos');
+    biblioteca.append(busca);
+    (window.ElementosQuadro?.grupos || []).forEach(grupo => {
+      const secao = document.createElement('div'); secao.className = 'q-elementos-grupo';
+      const titulo = document.createElement('p'); titulo.className = 'q-menu-titulo'; titulo.textContent = grupo;
+      const lista = document.createElement('div'); lista.className = 'q-elementos-lista';
+      ElementosQuadro.lista.filter(e => e.grupo === grupo).forEach(e => {
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.elemento = e.id;
+        b.innerHTML = ElementosQuadro.svg(e.id); b.append(document.createTextNode(e.nome));
+        if (conectar) { b.setAttribute('role', 'menuitem'); b.onclick = () => criaConectado(e.id); }
+        else b.dataset.add = e.id;
+        lista.append(b);
+      });
+      secao.append(titulo, lista); biblioteca.append(secao);
+    });
+    const vazio = document.createElement('p'); vazio.className = 'q-menu-ajuda'; vazio.hidden = true;
+    vazio.textContent = 'Nenhum elemento encontrado.'; vazio.setAttribute('role', 'status'); biblioteca.append(vazio);
+    const normaliza = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    busca.addEventListener('input', () => {
+      const termos = normaliza(busca.value).trim().split(/\s+/).filter(Boolean); let visiveis = 0;
+      biblioteca.querySelectorAll('.q-elementos-grupo').forEach(grupo => {
+        let total = 0;
+        grupo.querySelectorAll('[data-elemento]').forEach(b => {
+          const e = ElementosQuadro.obter(b.dataset.elemento), texto = normaliza(`${e.nome} ${e.grupo} ${e.termos}`);
+          b.hidden = !termos.every(t => texto.includes(t)); if (!b.hidden) total++;
+        });
+        grupo.hidden = !total; visiveis += total;
+      });
+      vazio.hidden = !!visiveis;
+    });
+    return biblioteca;
   }
 
   function desenhar() {
@@ -292,9 +378,7 @@
       e.style.setProperty('--q-alinhamento', alinhamentoNo(n));
       if (FORMAS[n.tipo]) e.insertAdjacentHTML('afterbegin', `<svg class="qf" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${FORMAS[n.tipo]}"/></svg>`);
       tamanho(e, n);
-      const t = document.createElement('div');
-      t.className = 'qt'; t.textContent = n.texto;
-      e.appendChild(t);
+      e.appendChild(conteudoNo(n));
       Object.keys(LADOS).forEach(lado => {
         const h = document.createElement('span');
         h.className = 'qh'; h.dataset.lado = lado;
@@ -303,6 +387,7 @@
       });
       if (n.tipo !== 'texto') { const r = document.createElement('span'); r.className = 'qr'; r.title = 'Arraste para redimensionar'; e.appendChild(r); }
       m.appendChild(e);
+      aplicaVertical(e, n);
     });
     aplicaVista();
     setas();
@@ -354,8 +439,10 @@
     return { x: (r.width / 2 - v.x) / v.k, y: (r.height / 2 - v.y) / v.k };
   }
   function novo(tipo, texto, x, y) {
-    const n = { id: uid(), tipo, texto: texto || { caixa: 'Caixa', nota: 'Nota', circulo: 'Círculo', losango: 'Losango', triangulo: 'Triângulo', texto: 'Texto' }[tipo], x, y };
-    if (TAMANHO[tipo]) [n.w, n.h] = TAMANHO[tipo];
+    const elemento = window.ElementosQuadro?.obter(tipo);
+    const n = { id: uid(), tipo: elemento ? 'estrategia' : tipo, texto: texto || elemento?.nome || { caixa: 'Caixa', nota: 'Nota', circulo: 'Círculo', losango: 'Losango', triangulo: 'Triângulo', texto: 'Texto' }[tipo], x, y };
+    if (elemento) n.elemento = elemento.id;
+    if (TAMANHO[n.tipo]) [n.w, n.h] = TAMANHO[n.tipo];
     est.nos.push(n); return n;
   }
   function adiciona(tipo) {
@@ -424,11 +511,11 @@
     });
     const cancelar = document.createElement('button'); cancelar.type = 'button';
     cancelar.setAttribute('role', 'menuitem'); cancelar.textContent = 'Cancelar · Esc'; cancelar.onclick = () => fechaConexao(true);
-    menu.append(titulo, formas, cancelar); $('quadro').append(menu);
+    menu.append(titulo, formas, criaBiblioteca(true), cancelar); $('quadro').append(menu);
     menu.addEventListener('keydown', ev => {
       if (!['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(ev.key)) return;
       ev.preventDefault();
-      const botoes = [...menu.querySelectorAll('button')], i = botoes.indexOf(document.activeElement);
+      const botoes = [...menu.querySelectorAll('button')].filter(b => b.getClientRects().length), i = botoes.indexOf(document.activeElement);
       const prox = ev.key === 'Home' ? 0 : ev.key === 'End' ? botoes.length - 1 : (i + (['ArrowDown', 'ArrowRight'].includes(ev.key) ? 1 : -1) + botoes.length) % botoes.length;
       botoes[prox].focus();
     });
@@ -659,11 +746,12 @@
     addEventListener('pagehide', () => { encerraEdicao(); persistir(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) { encerraEdicao(); persistir(); } });
     new ResizeObserver(() => { if (!$('quadro').hidden) aplicaVista(); }).observe(tela);
+    $('qElementos').append(criaBiblioteca());
     const menus = $('quadro').querySelectorAll('.q-menu');
     const fechaMenus = () => menus.forEach(m => { m.open = false; });
     const posicionaMenu = m => {
       const r = m.querySelector('summary').getBoundingClientRect(), painel = m.querySelector('.q-menu-painel');
-      const w = Math.min(240, innerWidth - 24);
+      const w = Math.min(painel.offsetWidth, innerWidth - 24);
       painel.style.setProperty('--q-menu-x', Math.max(12, Math.min(r.left, innerWidth - w - 12)) + 'px');
       painel.style.setProperty('--q-menu-y', r.bottom + 8 + 'px');
     };
@@ -690,6 +778,7 @@
       atualizaCores();
       atualizaFonte();
       atualizaAlinhamento();
+      atualizaVertical();
     };
     $('qCaneta').onclick = () => modo('caneta');
     $('qSelecionar').onclick = () => modo('selecionar');
@@ -712,6 +801,7 @@
     $('qFonte').onchange = () => alteraFonte($('qFonte').value === '' ? NaN : Number($('qFonte').value));
     $('qFonte').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('qFonte').blur(); } });
     $('quadro').querySelectorAll('[data-alinhar]').forEach(b => { b.onclick = () => alteraAlinhamento(b.dataset.alinhar); });
+    $('quadro').querySelectorAll('[data-alinhar-vertical]').forEach(b => { b.onclick = () => alteraVertical(b.dataset.alinharVertical); });
     $('qApagar').onclick = apaga;
     $('qDesfazer').onclick = volta;
     $('qMais').onclick = () => zoom(1.2);
@@ -739,6 +829,8 @@
     coresNo,
     fonteNo,
     alinhamentoNo,
+    aplicaVertical,
+    conteudoNo,
     apagaTraco,
     abrir() {
       montar();
