@@ -442,7 +442,7 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 #quadro .q-btn.q-icon { width: 32px; flex: 0 0 32px; padding: 0; }
 .q-icon > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .q-icon > svg ~ svg { display: none; }
-.q-comandos svg { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.q-comandos svg, .q-conexao svg { width: 17px; height: 17px; flex: 0 0 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 #qSalaBtn.ao-vivo { position: relative; }
 #qSalaBtn.ao-vivo::after { content: ''; position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px var(--paper); }
 .q-menu > summary::-webkit-details-marker { display: none; }
@@ -498,14 +498,21 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .qn .qf polygon { fill: var(--q-fundo, color-mix(in srgb, var(--ink) 8%, transparent)); stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .qn .qt { position: relative; z-index: 1; }
 .qn.triangulo .qt { margin-top: 26%; max-width: 58%; }
-.qn.triangulo .qh { right: calc(25% - 7px); }
+.qn.triangulo .qh[data-lado="direita"] { left: 75%; }
+.qn.triangulo .qh[data-lado="esquerda"] { left: 25%; }
 .qn .qr { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; background: var(--paper); border: 2px solid var(--ink); border-radius: 3px; cursor: nwse-resize; opacity: 0; transition: opacity .12s; z-index: 2; }
 .qn:hover .qr, .qn.sel .qr { opacity: 1; }
 .qn.texto { border-color: transparent; background: var(--q-fundo, transparent); font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
 .qn.sel { box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink); }
 .qn.texto.sel { border-color: var(--line); }
-.qn .qh { position: absolute; right: -8px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); cursor: crosshair; opacity: 0; transition: opacity .12s; }
+.qn .qh { position: absolute; width: 14px; height: 14px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); cursor: crosshair; opacity: 0; transition: opacity .12s; z-index: 2; }
+.qn .qh[data-lado="topo"] { left: 50%; top: 0; }
+.qn .qh[data-lado="direita"] { left: 100%; top: 50%; }
+.qn .qh[data-lado="baixo"] { left: 50%; top: 100%; }
+.qn .qh[data-lado="esquerda"] { left: 0; top: 50%; }
 .qn:hover .qh, .qn.sel .qh { opacity: 1; }
+.qn.q-alvo { outline: 2px dashed var(--ink); outline-offset: 5px; }
+.q-conexao { z-index: 110; }
 @media print { #quadro .q-comandos, #quadro .q-rodape { display: none !important; } .q-tela { height: auto; border: 0; } }
 
 /* quadro: caneta, traços e painel da sala ao vivo */

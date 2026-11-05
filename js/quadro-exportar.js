@@ -60,7 +60,7 @@
     const porId = new Map(nos.map(n => [n.id, n]));
     pagina.setas.forEach(s => {
       const a = porId.get(s.a), b = porId.get(s.b); if (!a || !b) return;
-      const p = borda(a, b), q = borda(b, a), angulo = Math.atan2(q.y - p.y, q.x - p.x);
+      const p = borda(a, b, s.ladoA), q = borda(b, a, s.ladoB), angulo = Math.atan2(q.y - p.y, q.x - p.x);
       c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(q.x, q.y); c.stroke();
       c.beginPath(); c.moveTo(q.x, q.y);
       c.lineTo(q.x - 14 * Math.cos(angulo - .45), q.y - 14 * Math.sin(angulo - .45));

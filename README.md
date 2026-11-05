@@ -26,6 +26,8 @@ O app tem menu lateral por área, busca rápida (Ctrl/⌘ K) e, no início, um c
 
 Em `#/quadro` (menu lateral): caixas, notas, círculos e textos que se arrastam e se ligam com setas, mais três modelos prontos (funil, unit economics, receita recorrente). Duplo clique edita, Delete apaga, Ctrl/⌘ Z desfaz, Ctrl/⌘ + rolagem dá zoom. O desenho fica só no `localStorage` do navegador. Código em `js/quadro.js`.
 
+Cada elemento tem conectores no topo, à direita, embaixo e à esquerda. Arraste uma bolinha para ver a linha acompanhar o ponteiro. Solte sobre outro elemento para conectá-lo, ou no espaço vazio para escolher uma forma ou texto no menu **Criar e conectar**. O novo elemento já nasce conectado; Esc ou **Cancelar** fecha o menu. As conexões mantêm os lados escolhidos ao mover, redimensionar, reabrir e exportar o quadro.
+
 O quadro aceita várias páginas: use **Nova página**, as setas ou o seletor para navegar. Cada página conserva seus desenhos, zoom e histórico de desfazer. **Limpar página** afeta somente a página aberta. O quadro antigo é preservado como a primeira página, e todas as páginas são salvas automaticamente neste navegador; o indicador informa se o armazenamento falhar.
 
 Uma única barra acima do quadro reúne os controles em ícones com tooltips: páginas, seleção, caneta, borracha, cores, inserção, edição, zoom, exportação, tablet e modo foco. **Inserir** contém formas e modelos; **Mais opções** contém **Limpar página**. Em janelas estreitas, a barra permite rolagem horizontal.

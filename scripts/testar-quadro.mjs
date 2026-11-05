@@ -20,6 +20,110 @@ async function setup(page,file='app.html'){
 const legacy={nos:[{id:'box',tipo:'caixa',x:150,y:120,w:200,h:80,texto:'Página original'},{id:'note',tipo:'nota',x:430,y:180,w:170,h:110,texto:'Anotações\nDuas linhas'},{id:'tri',tipo:'triangulo',x:750,y:210,w:180,h:150,texto:'Triângulo'},{id:'txt',tipo:'texto',x:-450,y:-150,texto:'Fora da vista'}],setas:[{id:'s',a:'box',b:'note'}],tracos:[{id:'legacy',p:[0,0,100,0],w:3}],vista:{x:0,y:0,k:1}};
 async function mount(page){for(const f of ['js/quadro-exportar.js','js/quadro.js'])await page.addScriptTag({content:fs.readFileSync(f,'utf8')});await page.evaluate(()=>{document.getElementById('boot').remove();for(const id of ['authWrap','topAuth'])document.getElementById(id).hidden=true;for(const id of ['shell','quadro'])document.getElementById(id).hidden=false;document.querySelector('#shell main.page').classList.add('larga');Quadro.abrir();});}
 async function draw(page,color,y=450){await page.getByRole('button',{name:color,exact:true}).click();const r=await page.locator('#qTela').boundingBox();await page.mouse.move(r.x+120,r.y+y);await page.mouse.down();await page.mouse.move(r.x+350,r.y+y);await page.mouse.up();}
+async function testarConexoes(browser, errors) {
+ const p = await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});
+ p.on('pageerror',e=>errors.push(e.message)); await setup(p);
+ const estado = {
+   nos:[{id:'origem',tipo:'caixa',x:400,y:300,w:160,h:80,texto:'Origem'},
+        {id:'destino',tipo:'caixa',x:800,y:300,w:160,h:80,texto:'Destino'}],
+   setas:[{id:'legada',a:'destino',b:'origem'}],tracos:[],vista:{x:0,y:0,k:1}
+ };
+ await p.evaluate(s=>localStorage.setItem('medida_quadro_v1',JSON.stringify(s)),estado); await mount(p);
+ const menu = p.getByRole('menu',{name:'Criar elemento conectado'});
+ const snapshot = () => p.evaluate(()=>JSON.stringify(Quadro.estado()));
+ const linha = () => p.locator('#qTemp').evaluate(e=>Object.fromEntries(['x1','y1','x2','y2'].map(k=>[k,Number(e.getAttribute(k))])));
+ async function comeca(lado) {
+   await p.locator('.qn[data-id="origem"]').click();
+   const h = await p.locator(`.qn[data-id="origem"] .qh[data-lado="${lado}"]`).boundingBox();
+   await p.mouse.move(h.x+h.width/2,h.y+h.height/2); await p.mouse.down();
+ }
+ async function moveMundo(x,y) {
+   const tela=await p.locator('#qTela').boundingBox(),v=await p.evaluate(()=>Quadro.estado().vista);
+   await p.mouse.move(tela.x+v.x+x*v.k,tela.y+v.y+y*v.k,{steps:5});
+ }
+ assert.equal(await p.locator('.qn[data-id="origem"] .qh').count(),4);
+ assert.equal(await p.locator('#qSetas .qs').count(),1,'Conexões antigas continuam funcionando');
+ // Arraste para um elemento: a prévia é visível, acompanha o mouse e se fixa ao destino.
+ await comeca('direita'); await moveMundo(700,240);
+ assert.equal(await p.locator('#qTemp').isVisible(),true);
+ const previa = await linha(); assert.equal(previa.x1,560); assert.equal(previa.y1,340);
+ assert.ok(Math.abs(previa.x2-700)<2 && Math.abs(previa.y2-240)<2);
+ await p.screenshot({path:join(outputDir,'conexao-arrastando.png')});
+ await moveMundo(880,340); assert.equal(await p.locator('.qn.q-alvo[data-id="destino"]').count(),1);
+ await p.mouse.up(); assert.equal(await menu.isVisible(),false);
+ const ligacao = await p.evaluate(()=>Quadro.estado().setas.find(s=>s.a==='origem'));
+ assert.equal(ligacao.b,'destino'); assert.equal(ligacao.ladoA,'direita'); assert.equal(ligacao.ladoB,'esquerda');
+ assert.equal(await p.locator('#qSetas .qs').count(),2);
+ // Nem uma segunda ligação idêntica nem soltar sobre o próprio nó altera o desenho.
+ const conectado = await snapshot();
+ await comeca('direita'); await moveMundo(880,340); await p.mouse.up(); assert.equal(await snapshot(),conectado);
+ await comeca('topo'); await moveMundo(480,340); await p.mouse.up(); assert.equal(await snapshot(),conectado);
+ await p.locator('#qDesfazer').click(); assert.equal(await p.locator('#qSetas .qs').count(),1);
+ const antes = await snapshot();
+ const escolhas = [
+   ['topo',480,160,'Caixa','caixa'],['direita',700,340,'Círculo','circulo'],
+   ['baixo',480,570,'Losango','losango'],['esquerda',200,340,'Triângulo','triangulo'],
+   ['topo',480,160,'Nota','nota'],['baixo',480,570,'Texto','texto']
+ ];
+ for(const [lado,x,y,nome,tipo] of escolhas) {
+   await comeca(lado); await moveMundo(x,y); await p.mouse.up();
+   assert.equal(await menu.isVisible(),true);
+   assert.equal(await p.locator('#qTemp').evaluate(e=>!e.hasAttribute('hidden') && getComputedStyle(e).display!=='none'),true);
+   assert.equal(await menu.getByRole('menuitem').count(),7);
+   assert.equal(await snapshot(),antes,'Abrir o menu ainda não deve criar elementos');
+   if(tipo==='circulo') await p.screenshot({path:join(outputDir,'conexao-menu.png')});
+   await menu.getByRole('menuitem',{name:nome,exact:true}).click();
+   const s = await p.evaluate(()=>Quadro.estado()), n=s.nos.at(-1), seta=s.setas.at(-1);
+   assert.equal(n.tipo,tipo); assert.equal(seta.a,'origem'); assert.equal(seta.b,n.id); assert.equal(seta.ladoA,lado);
+   assert.equal(await p.locator(`.qn[data-id="${n.id}"] .qh`).count(),4);
+   const box=await p.locator(`.qn[data-id="${n.id}"]`).evaluate(e=>({w:e.offsetWidth,h:e.offsetHeight}));
+   assert.ok(Math.abs(n.x+box.w/2-x)<2 && Math.abs(n.y+box.h/2-y)<2,'Novo elemento fica onde a linha foi solta');
+   assert.equal(await menu.isVisible(),false);
+   await p.locator('#qDesfazer').click(); assert.equal(await snapshot(),antes,'Desfazer remove o elemento e sua conexão juntos');
+ }
+ // Cancelar, Esc, clique fora e pointercancel não deixam conexões ou nós soltos.
+ await comeca('topo'); await moveMundo(480,160); await p.mouse.up();
+ await menu.getByRole('menuitem',{name:'Cancelar · Esc',exact:true}).click(); assert.equal(await snapshot(),antes);
+ await comeca('esquerda'); await moveMundo(200,340); await p.mouse.up(); await p.keyboard.press('Escape');
+ assert.equal(await menu.isVisible(),false); assert.equal(await p.locator('#qTemp').isVisible(),false); assert.equal(await snapshot(),antes);
+ await comeca('topo'); await moveMundo(480,160); await p.keyboard.press('Escape'); await p.mouse.up();
+ assert.equal(await menu.isVisible(),false); assert.equal(await snapshot(),antes);
+ await comeca('topo'); await moveMundo(480,160);
+ await p.locator('#qTela').dispatchEvent('pointercancel',{pointerId:1,pointerType:'mouse'}); await p.mouse.up();
+ assert.equal(await menu.isVisible(),false); assert.equal(await snapshot(),antes);
+ await comeca('topo'); await moveMundo(480,160); await p.mouse.up(); await p.locator('#qSelecionar').click();
+ assert.equal(await menu.isVisible(),false); assert.equal(await snapshot(),antes);
+ // Foco, zoom e pan: coordenadas de criação continuam no ponto da soltura.
+ await p.locator('#qFoco').click();
+ await comeca('direita'); await moveMundo(700,340); await p.mouse.up(); await p.keyboard.press('Escape');
+ assert.equal(await p.locator('body.q-foco').count(),1,'Esc fecha primeiro o menu, conservando o modo só quadro');
+ await p.keyboard.press('Escape');
+ await p.locator('#qMais').click();
+ await p.locator('#qTela').dispatchEvent('wheel',{deltaX:40,deltaY:60});
+ const v=await p.evaluate(()=>Quadro.estado().vista);
+ await comeca('topo'); await moveMundo(480,160); await p.mouse.up();
+ await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
+ const persistido=await p.evaluate(()=>Quadro.estado());
+ assert.equal(persistido.nos.at(-1).tipo,'circulo'); assert.deepEqual(persistido.vista,v);
+ const novo=persistido.nos.at(-1);
+ assert.ok(Math.abs(novo.x+70-480)<2 && Math.abs(novo.y+70-160)<2);
+ await p.locator('#qSelecionar').click();
+ // As âncoras seguem o movimento e o redimensionamento e sobrevivem à recarga.
+ const origem = p.locator('.qn[data-id="origem"]');
+ const r=await origem.boundingBox(); await p.mouse.move(r.x+r.width/2,r.y+r.height/2); await p.mouse.down();
+ await p.mouse.move(r.x+r.width/2+36,r.y+r.height/2+24); await p.mouse.up();
+ const resize=await origem.locator('.qr').boundingBox(); await p.mouse.move(resize.x+7,resize.y+7); await p.mouse.down();
+ await p.mouse.move(resize.x+37,resize.y+27); await p.mouse.up();
+ const ancora=await p.locator('#qSetas .qs').last().locator('.vis').evaluate(e=>({x:Number(e.getAttribute('x1')),y:Number(e.getAttribute('y1'))}));
+ const no=await p.evaluate(()=>Quadro.estado().nos.find(n=>n.id==='origem'));
+ assert.ok(Math.abs(ancora.x-(no.x+no.w/2))<2 && Math.abs(ancora.y-no.y)<2);
+ await p.waitForFunction(()=>document.getElementById('qSalvo').textContent==='Salvo neste navegador');
+ const final=await snapshot(); await p.reload(); await mount(p); assert.equal(await snapshot(),final);
+ const download=p.waitForEvent('download'); await p.locator('#qExportMenu summary').click(); await p.locator('#qExportarPagina').click();
+ await (await download).saveAs(join(outputDir,'conexoes.jpg'));
+ await p.screenshot({path:join(outputDir,'conexoes.png')});
+ console.log('✓ Conexões: quatro lados, prévia ao arrastar, ligação direta, criação dos seis tipos, desfazer, cancelamentos, teclado, modo foco, zoom/pan, âncoras, recarga e JPEG.');
+}
 (async()=>{const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || undefined,headless:true});try{
  const page=await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));await setup(page);await page.evaluate(s=>localStorage.setItem('medida_quadro_v1',JSON.stringify(s)),legacy);await mount(page);
  const first=(await page.evaluate(()=>Quadro.estado())).pagina;assert.equal(await page.locator('#qPagina option').count(),1);assert.equal(await page.locator('#qTinta path').count(),1);
@@ -125,6 +229,7 @@ async function draw(page,color,y=450){await page.getByRole('button',{name:color,
  await viewer.evaluate(estado=>Quadro.ver(estado),estadoColorido);
  for (const tipo of tipos) assert.deepEqual(await estilo(viewer,tipo),await estilo(colorPage,tipo));
  console.log('✓ Elementos: seis tipos, preenchimento exato, contraste nos dois temas, seleção, restauração, desfazer, edição, caneta independente, páginas, recarga, JPEG e visualização ao vivo.');
+ await testarConexoes(browser,errors);
  // Tablet segue a página, encerra um traço em curso na página correta e limita limpar/desfazer.
  const tablet=await browser.newPage({viewport:{width:1024,height:768},colorScheme:'dark'});tablet.on('pageerror',e=>errors.push(e.message));await tablet.addInitScript(()=>{window.sent=[];window.removed=[];window.erasers=[];let key=0;window.Sala={disponivel:true,tablet:async()=>({novaChave:()=>String(++key),gravar:async(k,t)=>sent.push({id:k,p:[...t.p],w:t.w,cor:t.cor,pagina:t.pagina}),apagar:async k=>removed.push(k),borracha:async(p,r,pagina)=>erasers.push({p,r,pagina}),aoVivo:cb=>window.receiveVista=cb}),ouvirQuadro:(_,cb)=>window.receive=cb};});await setup(tablet,'tablet.html');await tablet.waitForFunction(()=>window.receive);
  const a={nos:estadoColorido.nos,setas:[],tracos:[],pagina:first,numeroPagina:1,totalPaginas:2,area:{x:0,y:0,w:1024,h:768,pagina:first}};const b={...a,pagina:second,numeroPagina:2,area:{...a.area,pagina:second}};
