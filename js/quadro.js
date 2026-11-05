@@ -56,6 +56,7 @@
     if ($('qDesfazer')) $('qDesfazer').disabled = !desfazer.length;
     if ($('qApagar')) $('qApagar').disabled = !sel;
     atualizaCores();
+    atualizaFonte();
   }
   function volta() {
     fechaConexao();
@@ -200,13 +201,13 @@
     const branco = 1.05 / (luminancia + .05), preto = (luminancia + .05) / (.00303527 + .05);
     return { fundo: n.cor.toLowerCase(), texto: branco >= preto ? '#ffffff' : '#0a0a0a' };
   }
-  function noParaColorir() {
+  function noSelecionado() {
     return !caneta && !borracha && sel && sel.tipo === 'no' ? est.nos.find(n => n.id === sel.id) : null;
   }
   function atualizaCores() {
     const grupo = $('quadro')?.querySelector('.q-cores');
     if (!grupo) return;
-    const n = noParaColorir(), ativa = n ? (coresNo(n)?.fundo || 'inherit') : corCaneta;
+    const n = noSelecionado(), ativa = n ? (coresNo(n)?.fundo || 'inherit') : corCaneta;
     grupo.setAttribute('aria-label', n ? 'Cor de fundo do elemento selecionado' : 'Cor da caneta');
     grupo.querySelectorAll('[data-cor]').forEach(b => {
       b.setAttribute('aria-pressed', String(b.dataset.cor === ativa));
@@ -214,6 +215,39 @@
         ? (n ? 'Restaurar fundo padrão' : 'Caneta padrão (preta no tema claro, branca no escuro)')
         : `${n ? 'Fundo' : 'Caneta'}: ${b.getAttribute('aria-label')}`;
     });
+  }
+  function fonteNo(n) {
+    return Number.isFinite(n.fonte) && n.fonte >= 8 && n.fonte <= 96 ? n.fonte : null;
+  }
+  function fonteAtual(n) {
+    const texto = mundo().querySelector(`.qn[data-id="${n.id}"] .qt`);
+    return texto ? parseFloat(getComputedStyle(texto).fontSize) : (fonteNo(n) || (n.tipo === 'texto' ? 22 : 15));
+  }
+  function atualizaFonte() {
+    if (!$('qFonte')) return;
+    const n = noSelecionado(), fonte = n ? fonteAtual(n) : null;
+    $('qFonte').disabled = !n; $('qFonte').value = n ? Math.round(fonte) : '';
+    $('qFonteMenos').disabled = !n || fonte <= 8;
+    $('qFonteMais').disabled = !n || fonte >= 96;
+  }
+  function alteraFonte(valor) {
+    const n = noSelecionado();
+    if (!n || !Number.isFinite(valor)) return atualizaFonte();
+    const fonte = Math.max(8, Math.min(96, Math.round(valor)));
+    encerraEdicao();
+    if (fonte === fonteAtual(n)) return atualizaFonte();
+    foto(); n.fonte = fonte;
+    const e = mundo().querySelector(`.qn[data-id="${n.id}"]`);
+    e.style.setProperty('--q-fonte', fonte + 'px');
+    // Conserva o espaço já dimensionado e aumenta a altura se o texto precisar.
+    if (n.tipo !== 'texto' || n.h) {
+      const t = e.querySelector('.qt'), css = getComputedStyle(e), texto = getComputedStyle(t);
+      const extra = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((s, k) => s + parseFloat(css[k]), 0)
+        + parseFloat(texto.marginTop) + parseFloat(texto.marginBottom);
+      n.h = Math.max(e.offsetHeight, Math.ceil(t.scrollHeight + extra));
+      tamanho(e, n);
+    }
+    setas(); salvar();
   }
   function tamanho(e, n) {
     if (n.w) { e.style.width = n.w + 'px'; e.style.minWidth = '0'; e.style.maxWidth = 'none'; }
@@ -230,6 +264,8 @@
       e.style.left = n.x + 'px'; e.style.top = n.y + 'px';
       const cores = coresNo(n);
       if (cores) { e.style.setProperty('--q-fundo', cores.fundo); e.style.setProperty('--q-texto', cores.texto); }
+      const fonte = fonteNo(n);
+      if (fonte) e.style.setProperty('--q-fonte', fonte + 'px');
       if (FORMAS[n.tipo]) e.insertAdjacentHTML('afterbegin', `<svg class="qf" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${FORMAS[n.tipo]}"/></svg>`);
       tamanho(e, n);
       const t = document.createElement('div');
@@ -628,12 +664,13 @@
       });
       tela.classList.toggle('caneta', caneta); tela.classList.toggle('borracha', borracha);
       atualizaCores();
+      atualizaFonte();
     };
     $('qCaneta').onclick = () => modo('caneta');
     $('qSelecionar').onclick = () => modo('selecionar');
     const cores = $('quadro').querySelectorAll('[data-cor]');
     cores.forEach(b => { b.onclick = () => {
-      const n = noParaColorir();
+      const n = noSelecionado();
       if (n) {
         const cor = b.dataset.cor;
         if ((coresNo(n)?.fundo || 'inherit') === cor) return;
@@ -645,6 +682,10 @@
       modo('caneta');
     }; });
     $('qBorracha').onclick = () => modo('borracha');
+    $('qFonteMenos').onclick = () => { const n = noSelecionado(); if (n) alteraFonte(fonteAtual(n) - 2); };
+    $('qFonteMais').onclick = () => { const n = noSelecionado(); if (n) alteraFonte(fonteAtual(n) + 2); };
+    $('qFonte').onchange = () => alteraFonte($('qFonte').value === '' ? NaN : Number($('qFonte').value));
+    $('qFonte').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('qFonte').blur(); } });
     $('qApagar').onclick = apaga;
     $('qDesfazer').onclick = volta;
     $('qMais').onclick = () => zoom(1.2);
@@ -670,6 +711,7 @@
     aoMudar: null, aoVista: null, aoApagar: null,
     sairFoco: () => foco(false, false),
     coresNo,
+    fonteNo,
     apagaTraco,
     abrir() {
       montar();

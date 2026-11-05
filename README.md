@@ -34,6 +34,8 @@ Uma única barra acima do quadro reúne os controles em ícones com tooltips: p�
 
 Para mudar o fundo de uma caixa, nota, círculo, losango, triângulo ou texto, use **Selecionar e mover**, clique no elemento e depois em uma cor da barra. O texto ajusta o contraste automaticamente. A cor padrão restaura o fundo original. A alteração pode ser desfeita e é preservada nas páginas, ao reabrir o quadro, na exportação e na transmissão para tablet e turma. Com a caneta ativa ou sem um elemento selecionado, a paleta continua escolhendo a cor dos traços.
 
+Com o elemento selecionado, use **A+** para aumentar a fonte e **A−** para diminuir, ou digite um tamanho de 8 a 96 no campo entre os botões e confirme com Enter. O tamanho vale só para esse elemento; a altura da forma cresce se o texto precisar de espaço. É possível desfazer a mudança, que fica salva e também aparece na exportação, no tablet e na turma ao vivo.
+
 No menu **Exportar**, **Página atual (JPEG)** exporta a página aberta; **Todas as páginas (ZIP)** gera um arquivo com um JPEG numerado por página. As imagens têm fundo branco, preservam as cores e incluem textos, formas, setas e traços fora da área visível. A exportação é local, em `js/quadro-exportar.js`. **Só quadro** esconde a interface; Esc restaura a tela e Page Up / Page Down navegam entre páginas existentes. O tablet e a turma acompanham a página aberta pelo computador.
 
 Regressão de páginas, tablet e exportação: `node scripts/testar-quadro.mjs` (requer Playwright e Chromium). Para usar instalações existentes, configure `PLAYWRIGHT_MODULE` com o caminho do pacote e `CHROME_PATH` com o executável do Chrome. O teste simula a sala sem gravar no Firebase.

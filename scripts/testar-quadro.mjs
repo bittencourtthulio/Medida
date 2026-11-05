@@ -20,6 +20,65 @@ async function setup(page,file='app.html'){
 const legacy={nos:[{id:'box',tipo:'caixa',x:150,y:120,w:200,h:80,texto:'Página original'},{id:'note',tipo:'nota',x:430,y:180,w:170,h:110,texto:'Anotações\nDuas linhas'},{id:'tri',tipo:'triangulo',x:750,y:210,w:180,h:150,texto:'Triângulo'},{id:'txt',tipo:'texto',x:-450,y:-150,texto:'Fora da vista'}],setas:[{id:'s',a:'box',b:'note'}],tracos:[{id:'legacy',p:[0,0,100,0],w:3}],vista:{x:0,y:0,k:1}};
 async function mount(page){for(const f of ['js/quadro-exportar.js','js/quadro.js'])await page.addScriptTag({content:fs.readFileSync(f,'utf8')});await page.evaluate(()=>{document.getElementById('boot').remove();for(const id of ['authWrap','topAuth'])document.getElementById(id).hidden=true;for(const id of ['shell','quadro'])document.getElementById(id).hidden=false;document.querySelector('#shell main.page').classList.add('larga');Quadro.abrir();});}
 async function draw(page,color,y=450){await page.getByRole('button',{name:color,exact:true}).click();const r=await page.locator('#qTela').boundingBox();await page.mouse.move(r.x+120,r.y+y);await page.mouse.down();await page.mouse.move(r.x+350,r.y+y);await page.mouse.up();}
+async function testarFontes(browser,errors) {
+ const p=await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});
+ p.on('pageerror',e=>errors.push(e.message)); await setup(p);
+ const tipos=['caixa','nota','circulo','losango','triangulo','texto'];
+ const nos=tipos.map((tipo,i)=>({id:tipo,tipo,x:60+i%3*300,y:60+Math.floor(i/3)*300,w:220,h:tipo==='caixa'?60:180,texto:tipo==='caixa'?'Caixa':tipo}));
+ await p.evaluate(nos=>localStorage.setItem('medida_quadro_v1',JSON.stringify({nos,setas:[],tracos:[],vista:{x:0,y:0,k:1}})),nos); await mount(p);
+ const fonte=tipo=>p.locator(`.qn[data-id="${tipo}"] .qt`).evaluate(e=>parseFloat(getComputedStyle(e).fontSize));
+ const valor=tipo=>p.evaluate(tipo=>Quadro.estado().nos.find(n=>n.id===tipo),tipo);
+ const selecionar=tipo=>p.locator(`.qn[data-id="${tipo}"]`).click();
+ async function digitar(n) { await p.locator('#qFonte').fill(String(n)); await p.locator('#qFonte').press('Enter'); }
+ assert.equal(await p.locator('#qFonteMais').isDisabled(),true);
+ for(const tipo of tipos) {
+   await selecionar(tipo);
+   const inicial=tipo==='texto'?22:15;
+   assert.equal(await fonte(tipo),inicial,'Quadros anteriores conservam o tamanho padrão');
+   assert.equal(await p.locator('#qFonte').inputValue(),String(inicial));
+   await p.getByRole('button',{name:'Aumentar fonte',exact:true}).click();
+   assert.equal(await fonte(tipo),inicial+2);
+   await digitar(32); assert.equal(await fonte(tipo),32); assert.equal((await valor(tipo)).fonte,32);
+ }
+ // Alterar um elemento preserva os demais e aumenta o espaço da forma quando necessário.
+ await selecionar('caixa'); await digitar(48);
+ assert.equal(await fonte('nota'),32); assert.ok((await valor('caixa')).h>60);
+ await p.getByRole('button',{name:'Diminuir fonte',exact:true}).click(); assert.equal(await fonte('caixa'),46);
+ await p.locator('#qDesfazer').click(); assert.equal(await fonte('caixa'),48);
+ await selecionar('caixa'); await digitar(''); assert.equal(await p.locator('#qFonte').inputValue(),'48');
+ await digitar(0); assert.equal(await fonte('caixa'),8); assert.equal(await p.locator('#qFonteMenos').isDisabled(),true);
+ await digitar(200); assert.equal(await fonte('caixa'),96); assert.equal(await p.locator('#qFonteMais').isDisabled(),true);
+ await digitar(48);
+ // O clique no controle de fonte conclui a edição sem perder o texto digitado.
+ await p.locator('.qn[data-id="nota"]').dblclick();
+ await p.locator('.qn[data-id="nota"] .qt').fill('Texto revisado');
+ await p.locator('#qFonteMais').click(); assert.equal((await valor('nota')).texto,'Texto revisado'); assert.equal(await fonte('nota'),34);
+ await p.locator('#qDesfazer').click(); assert.equal((await valor('nota')).texto,'Texto revisado'); assert.equal(await fonte('nota'),32);
+ await selecionar('caixa'); await p.locator('#qCaneta').click();
+ assert.equal(await p.locator('#qFonte').isDisabled(),true);
+ await p.locator('#qSelecionar').click(); assert.equal(await p.locator('#qFonte').inputValue(),'48');
+ await p.locator('#qNovaPagina').click(); assert.equal(await p.locator('#qFonteMais').isDisabled(),true);
+ await p.locator('#qAnterior').click(); assert.equal(await fonte('caixa'),48);
+ await p.waitForFunction(()=>document.getElementById('qSalvo').textContent==='Salvo neste navegador');
+ await p.reload(); await mount(p); assert.equal(await fonte('caixa'),48); assert.equal(await fonte('nota'),32);
+ await p.evaluate(()=>{
+   window.fontesExportadas=[];
+   const original=CanvasRenderingContext2D.prototype.fillText;
+   CanvasRenderingContext2D.prototype.fillText=function(texto,...args){fontesExportadas.push({texto,fonte:this.font});return original.call(this,texto,...args);};
+ });
+ const download=p.waitForEvent('download'); await p.locator('#qExportMenu summary').click(); await p.locator('#qExportarPagina').click();
+ await (await download).saveAs(join(outputDir,'fontes.jpg'));
+ const fontes=await p.evaluate(()=>fontesExportadas);
+ assert.ok(fontes.some(f=>f.texto==='Caixa' && /\b48px\b/.test(f.fonte)),'JPEG usa a fonte escolhida');
+ assert.ok(fontes.some(f=>/\b32px\b/.test(f.fonte)));
+ await selecionar('caixa'); await p.screenshot({path:join(outputDir,'fontes.png')});
+ const publico=await p.evaluate(()=>Quadro.estado());
+ const viewer=await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'light'});
+ viewer.on('pageerror',e=>errors.push(e.message)); await setup(viewer); await mount(viewer);
+ await viewer.evaluate(s=>Quadro.ver(s),publico);
+ assert.equal(await viewer.locator('.qn[data-id="caixa"] .qt').evaluate(e=>getComputedStyle(e).fontSize),'48px');
+ console.log('✓ Fontes: seis tipos, aumentar/diminuir, tamanho digitado, limites, altura, edição, desfazer, seleção, páginas, recarga, JPEG e visualização ao vivo.');
+}
 async function testarConexoes(browser, errors) {
  const p = await browser.newPage({viewport:{width:1440,height:1000},colorScheme:'dark',acceptDownloads:true});
  p.on('pageerror',e=>errors.push(e.message)); await setup(p);
@@ -229,11 +288,12 @@ async function testarConexoes(browser, errors) {
  await viewer.evaluate(estado=>Quadro.ver(estado),estadoColorido);
  for (const tipo of tipos) assert.deepEqual(await estilo(viewer,tipo),await estilo(colorPage,tipo));
  console.log('✓ Elementos: seis tipos, preenchimento exato, contraste nos dois temas, seleção, restauração, desfazer, edição, caneta independente, páginas, recarga, JPEG e visualização ao vivo.');
+ await testarFontes(browser,errors);
  await testarConexoes(browser,errors);
  // Tablet segue a página, encerra um traço em curso na página correta e limita limpar/desfazer.
  const tablet=await browser.newPage({viewport:{width:1024,height:768},colorScheme:'dark'});tablet.on('pageerror',e=>errors.push(e.message));await tablet.addInitScript(()=>{window.sent=[];window.removed=[];window.erasers=[];let key=0;window.Sala={disponivel:true,tablet:async()=>({novaChave:()=>String(++key),gravar:async(k,t)=>sent.push({id:k,p:[...t.p],w:t.w,cor:t.cor,pagina:t.pagina}),apagar:async k=>removed.push(k),borracha:async(p,r,pagina)=>erasers.push({p,r,pagina}),aoVivo:cb=>window.receiveVista=cb}),ouvirQuadro:(_,cb)=>window.receive=cb};});await setup(tablet,'tablet.html');await tablet.waitForFunction(()=>window.receive);
- const a={nos:estadoColorido.nos,setas:[],tracos:[],pagina:first,numeroPagina:1,totalPaginas:2,area:{x:0,y:0,w:1024,h:768,pagina:first}};const b={...a,pagina:second,numeroPagina:2,area:{...a.area,pagina:second}};
- await tablet.evaluate(a=>receive(a),a);assert.deepEqual(await estilo(tablet,'triangulo'),await estilo(colorPage,'triangulo'));await tablet.getByRole('button',{name:'Azul',exact:true}).click();await tablet.mouse.move(100,400);await tablet.mouse.down();await tablet.mouse.move(300,400);await tablet.evaluate(b=>receive(b),b);await tablet.mouse.up();assert.equal(await tablet.evaluate(()=>sent.at(-1).pagina),first);assert.equal(await tablet.locator('#desf').isDisabled(),true);
+ const a={nos:estadoColorido.nos.map(n=>({...n,fonte:32})),setas:[],tracos:[],pagina:first,numeroPagina:1,totalPaginas:2,area:{x:0,y:0,w:1024,h:768,pagina:first}};const b={...a,pagina:second,numeroPagina:2,area:{...a.area,pagina:second}};
+ await tablet.evaluate(a=>receive(a),a);assert.deepEqual(await estilo(tablet,'triangulo'),await estilo(colorPage,'triangulo'));assert.equal(await tablet.locator('.qn[data-id="triangulo"] .qt').evaluate(e=>getComputedStyle(e).fontSize),'32px');await tablet.getByRole('button',{name:'Azul',exact:true}).click();await tablet.mouse.move(100,400);await tablet.mouse.down();await tablet.mouse.move(300,400);await tablet.evaluate(b=>receive(b),b);await tablet.mouse.up();assert.equal(await tablet.evaluate(()=>sent.at(-1).pagina),first);assert.equal(await tablet.locator('#desf').isDisabled(),true);
  await tablet.getByRole('button',{name:'Vermelho',exact:true}).click();await tablet.mouse.move(100,400);await tablet.mouse.down();await tablet.mouse.move(300,400);await tablet.mouse.up();assert.equal(await tablet.evaluate(()=>sent.at(-1).pagina),second);await tablet.locator('#limpa').click();assert.deepEqual(await tablet.evaluate(()=>removed),['2']);
  await tablet.evaluate(a=>receive(a),a);assert.equal(await tablet.locator('#desf').isDisabled(),false);await tablet.locator('#desf').click();assert.deepEqual(await tablet.evaluate(()=>removed),['2','1']);assert.match(await tablet.locator('#mPagina').textContent(),/Página 1 de 2/);
  await page.screenshot({path:join(outputDir, 'interface.png')});assert.deepEqual(errors,[]);console.log('✓ Tablet: troca durante desenho, identificação de página, limpar/desfazer isolados e indicador de página.');
