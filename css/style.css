@@ -472,6 +472,7 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 #qFonte { width: 40px; min-width: 40px; height: 30px; padding: 3px 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font: 500 12px var(--display); font-variant-numeric: tabular-nums; text-align: center; appearance: textfield; }
 #qFonte::-webkit-inner-spin-button, #qFonte::-webkit-outer-spin-button { appearance: none; margin: 0; }
 #qFonte:disabled { opacity: .3; }
+#quadro [data-alinhar][aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .q-barra select { width: 100%; font: inherit; font-size: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); }
 #quadro .q-cores { gap: 1px; padding: 0; border: 0; }
 #quadro .q-cor { width: 24px; height: 28px; border-radius: 6px; }
@@ -490,11 +491,13 @@ kbd { font: 600 11px var(--display); border: 1.5px solid var(--line); border-rad
 .q-setas .sel .vis { stroke-width: 4; }
 .q-setas .qtemp { stroke: currentColor; stroke-width: 2; stroke-dasharray: 6 5; }
 .q-dica { position: absolute; left: 14px; bottom: 10px; margin: 0; font-size: 12px; color: var(--mute); pointer-events: none; }
-.qn { position: absolute; min-width: 120px; max-width: 280px; padding: 14px 18px; background: var(--q-fundo, var(--paper)); color: var(--q-texto, var(--ink)); border: 2px solid var(--ink); border-radius: 14px; text-align: center; font-weight: 600; cursor: move; }
+.qn { position: absolute; min-width: 120px; max-width: 280px; padding: 14px 18px; background: var(--q-fundo, var(--paper)); color: var(--q-texto, var(--ink)); border: 2px solid var(--ink); border-radius: 14px; text-align: var(--q-alinhamento, center); font-weight: 600; cursor: move; }
 .qn .qt { outline: none; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.2em; font-size: var(--q-fonte, inherit); }
 .qn .qt[contenteditable="true"], .qn .qt[contenteditable="plaintext-only"] { cursor: text; }
-.qn.nota { background: var(--q-fundo, var(--soft)); border-style: dashed; border-radius: 4px; font-weight: 500; text-align: left; min-width: 150px; min-height: 90px; }
+.qn.nota { background: var(--q-fundo, var(--soft)); border-style: dashed; border-radius: 4px; font-weight: 500; text-align: var(--q-alinhamento, left); min-width: 150px; min-height: 90px; }
 .qn.circulo, .qn.losango, .qn.triangulo { display: flex; align-items: center; justify-content: center; padding: 22px; }
+.qn.circulo .qt, .qn.losango .qt, .qn.triangulo .qt { width: 100%; }
+.qn.losango .qt { max-width: 70%; }
 .qn.circulo { border-radius: 50%; min-width: 130px; min-height: 130px; }
 /* formas vazadas: o preenchimento é translúcido, então a interseção entre duas formas fica mais escura (Venn) */
 .qn.circulo { background: var(--q-fundo, color-mix(in srgb, var(--ink) 8%, transparent)); }

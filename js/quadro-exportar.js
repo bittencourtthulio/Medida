@@ -12,6 +12,7 @@
     if (cores) { e.style.setProperty('--q-fundo', cores.fundo); e.style.setProperty('--q-texto', cores.texto); }
     const fonte = Quadro.fonteNo(n);
     if (fonte) e.style.setProperty('--q-fonte', fonte + 'px');
+    e.style.setProperty('--q-alinhamento', Quadro.alinhamentoNo(n));
     if (n.w) Object.assign(e.style, { width: n.w + 'px', minWidth: '0', maxWidth: 'none' });
     if (n.h) Object.assign(e.style, { height: n.h + 'px', minHeight: '0' });
     const t = document.createElement('div'); t.className = 'qt'; t.textContent = n.texto;

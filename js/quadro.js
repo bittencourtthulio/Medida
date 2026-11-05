@@ -57,6 +57,7 @@
     if ($('qApagar')) $('qApagar').disabled = !sel;
     atualizaCores();
     atualizaFonte();
+    atualizaAlinhamento();
   }
   function volta() {
     fechaConexao();
@@ -192,6 +193,7 @@
   const FORMAS = { losango: '50,0 100,50 50,100 0,50', triangulo: '50,0 100,100 0,100' };
   const TAMANHO = { caixa: [160, 60], nota: [170, 110], circulo: [140, 140], losango: [180, 120], triangulo: [170, 140] };
   const LADOS = { topo: [0, -1], direita: [1, 0], baixo: [0, 1], esquerda: [-1, 0] };
+  const ALINHAMENTOS = ['left', 'center', 'right'];
   // O fundo usa a cor exata; o texto recebe a cor com maior contraste.
   function coresNo(n) {
     if (!/^#[0-9a-f]{6}$/i.test(n.cor)) return null;
@@ -249,6 +251,27 @@
     }
     setas(); salvar();
   }
+  function alinhamentoNo(n) {
+    return ALINHAMENTOS.includes(n.alinhamento) ? n.alinhamento : (n.tipo === 'nota' ? 'left' : 'center');
+  }
+  function atualizaAlinhamento() {
+    const botoes = $('quadro')?.querySelectorAll('[data-alinhar]');
+    if (!botoes) return;
+    const n = noSelecionado();
+    botoes.forEach(b => {
+      b.disabled = !n;
+      b.setAttribute('aria-pressed', String(!!n && b.dataset.alinhar === alinhamentoNo(n)));
+    });
+  }
+  function alteraAlinhamento(alinhamento) {
+    const n = noSelecionado();
+    if (!n || !ALINHAMENTOS.includes(alinhamento)) return;
+    encerraEdicao();
+    if (alinhamentoNo(n) === alinhamento) return;
+    foto(); n.alinhamento = alinhamento;
+    mundo().querySelector(`.qn[data-id="${n.id}"]`).style.setProperty('--q-alinhamento', alinhamento);
+    setas(); salvar();
+  }
   function tamanho(e, n) {
     if (n.w) { e.style.width = n.w + 'px'; e.style.minWidth = '0'; e.style.maxWidth = 'none'; }
     if (n.h) { e.style.height = n.h + 'px'; e.style.minHeight = '0'; }
@@ -266,6 +289,7 @@
       if (cores) { e.style.setProperty('--q-fundo', cores.fundo); e.style.setProperty('--q-texto', cores.texto); }
       const fonte = fonteNo(n);
       if (fonte) e.style.setProperty('--q-fonte', fonte + 'px');
+      e.style.setProperty('--q-alinhamento', alinhamentoNo(n));
       if (FORMAS[n.tipo]) e.insertAdjacentHTML('afterbegin', `<svg class="qf" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${FORMAS[n.tipo]}"/></svg>`);
       tamanho(e, n);
       const t = document.createElement('div');
@@ -421,7 +445,7 @@
     const fim = () => {
       e.removeEventListener('blur', fim);
       e.contentEditable = 'false';
-      const n = est.nos.find(x => x.id === id), t = e.textContent.trim();
+      const n = est.nos.find(x => x.id === id), t = e.innerText.trim();
       if (n && t !== n.texto) { foto(); n.texto = t; }
       setas(); salvar();
     };
@@ -665,6 +689,7 @@
       tela.classList.toggle('caneta', caneta); tela.classList.toggle('borracha', borracha);
       atualizaCores();
       atualizaFonte();
+      atualizaAlinhamento();
     };
     $('qCaneta').onclick = () => modo('caneta');
     $('qSelecionar').onclick = () => modo('selecionar');
@@ -686,6 +711,7 @@
     $('qFonteMais').onclick = () => { const n = noSelecionado(); if (n) alteraFonte(fonteAtual(n) + 2); };
     $('qFonte').onchange = () => alteraFonte($('qFonte').value === '' ? NaN : Number($('qFonte').value));
     $('qFonte').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('qFonte').blur(); } });
+    $('quadro').querySelectorAll('[data-alinhar]').forEach(b => { b.onclick = () => alteraAlinhamento(b.dataset.alinhar); });
     $('qApagar').onclick = apaga;
     $('qDesfazer').onclick = volta;
     $('qMais').onclick = () => zoom(1.2);
@@ -712,6 +738,7 @@
     sairFoco: () => foco(false, false),
     coresNo,
     fonteNo,
+    alinhamentoNo,
     apagaTraco,
     abrir() {
       montar();
