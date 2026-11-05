@@ -30,6 +30,8 @@ O quadro aceita várias páginas: use **Nova página**, as setas ou o seletor pa
 
 Uma única barra acima do quadro reúne os controles em ícones com tooltips: páginas, seleção, caneta, borracha, cores, inserção, edição, zoom, exportação, tablet e modo foco. **Inserir** contém formas e modelos; **Mais opções** contém **Limpar página**. Em janelas estreitas, a barra permite rolagem horizontal.
 
+Para mudar o fundo de uma caixa, nota, círculo, losango, triângulo ou texto, use **Selecionar e mover**, clique no elemento e depois em uma cor da barra. O texto ajusta o contraste automaticamente. A cor padrão restaura o fundo original. A alteração pode ser desfeita e é preservada nas páginas, ao reabrir o quadro, na exportação e na transmissão para tablet e turma. Com a caneta ativa ou sem um elemento selecionado, a paleta continua escolhendo a cor dos traços.
+
 No menu **Exportar**, **Página atual (JPEG)** exporta a página aberta; **Todas as páginas (ZIP)** gera um arquivo com um JPEG numerado por página. As imagens têm fundo branco, preservam as cores e incluem textos, formas, setas e traços fora da área visível. A exportação é local, em `js/quadro-exportar.js`. **Só quadro** esconde a interface; Esc restaura a tela e Page Up / Page Down navegam entre páginas existentes. O tablet e a turma acompanham a página aberta pelo computador.
 
 Regressão de páginas, tablet e exportação: `node scripts/testar-quadro.mjs` (requer Playwright e Chromium). Para usar instalações existentes, configure `PLAYWRIGHT_MODULE` com o caminho do pacote e `CHROME_PATH` com o executável do Chrome. O teste simula a sala sem gravar no Firebase.

@@ -8,6 +8,8 @@
     const e = document.createElement('div');
     e.className = `qn ${n.tipo}`;
     e.style.left = e.style.top = '0';
+    const cores = Quadro.coresNo(n);
+    if (cores) { e.style.setProperty('--q-fundo', cores.fundo); e.style.setProperty('--q-texto', cores.texto); }
     if (n.w) Object.assign(e.style, { width: n.w + 'px', minWidth: '0', maxWidth: 'none' });
     if (n.h) Object.assign(e.style, { height: n.h + 'px', minHeight: '0' });
     const t = document.createElement('div'); t.className = 'qt'; t.textContent = n.texto;
@@ -23,7 +25,7 @@
       if (ultima && Math.abs(ultima.y - y) < 1) { ultima.texto += text.textContent[i]; ultima.direita = x + r.width; }
       else linhas.push({ texto: text.textContent[i], x, y, direita: x + r.width, h: r.height });
     }
-    const m = { ...n, w: box.width, h: box.height, linhas, font: `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`, tamanho: parseFloat(css.fontSize), espacamento: css.letterSpacing };
+    const m = { ...n, cores, w: box.width, h: box.height, linhas, font: `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`, tamanho: parseFloat(css.fontSize), espacamento: css.letterSpacing };
     e.remove(); return m;
   }
 
@@ -65,13 +67,13 @@
       c.lineTo(q.x - 14 * Math.cos(angulo + .45), q.y - 14 * Math.sin(angulo + .45)); c.closePath(); c.fill();
     });
     nos.forEach(n => {
-      if (n.tipo !== 'texto') {
+      if (n.tipo !== 'texto' || n.cores) {
         caminhoNo(c, n);
-        c.fillStyle = ['circulo', 'losango', 'triangulo'].includes(n.tipo) ? 'rgba(10,10,10,.08)' : (n.tipo === 'nota' ? '#f3f3f3' : '#ffffff');
+        c.fillStyle = n.cores?.fundo || (['circulo', 'losango', 'triangulo'].includes(n.tipo) ? 'rgba(10,10,10,.08)' : (n.tipo === 'nota' ? '#f3f3f3' : '#ffffff'));
         c.fill(); c.strokeStyle = INK; c.lineWidth = 2;
-        c.setLineDash(n.tipo === 'nota' ? [6, 4] : []); c.stroke(); c.setLineDash([]);
+        if (n.tipo !== 'texto') { c.setLineDash(n.tipo === 'nota' ? [6, 4] : []); c.stroke(); c.setLineDash([]); }
       }
-      c.font = n.font; c.fillStyle = INK; c.textBaseline = 'alphabetic';
+      c.font = n.font; c.fillStyle = n.cores?.texto || INK; c.textBaseline = 'alphabetic';
       if ('letterSpacing' in c) c.letterSpacing = n.espacamento === 'normal' ? '0px' : n.espacamento;
       n.linhas.forEach(l => { const metrica = c.measureText(l.texto); c.fillText(l.texto, l.x, l.y + (metrica.fontBoundingBoxAscent || n.tamanho * .8)); });
     });

@@ -54,6 +54,7 @@
   function atualizaAcoes() {
     if ($('qDesfazer')) $('qDesfazer').disabled = !desfazer.length;
     if ($('qApagar')) $('qApagar').disabled = !sel;
+    atualizaCores();
   }
   function volta() {
     if (!desfazer.length) return;
@@ -186,6 +187,30 @@
 
   const FORMAS = { losango: '50,0 100,50 50,100 0,50', triangulo: '50,0 100,100 0,100' };
   const TAMANHO = { caixa: [160, 60], nota: [170, 110], circulo: [140, 140], losango: [180, 120], triangulo: [170, 140] };
+  // O fundo usa a cor exata; o texto recebe a cor com maior contraste.
+  function coresNo(n) {
+    if (!/^#[0-9a-f]{6}$/i.test(n.cor)) return null;
+    const rgb = n.cor.slice(1).match(/../g).map(h => parseInt(h, 16) / 255);
+    const [r, g, b] = rgb.map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+    const luminancia = .2126 * r + .7152 * g + .0722 * b;
+    const branco = 1.05 / (luminancia + .05), preto = (luminancia + .05) / (.00303527 + .05);
+    return { fundo: n.cor.toLowerCase(), texto: branco >= preto ? '#ffffff' : '#0a0a0a' };
+  }
+  function noParaColorir() {
+    return !caneta && !borracha && sel && sel.tipo === 'no' ? est.nos.find(n => n.id === sel.id) : null;
+  }
+  function atualizaCores() {
+    const grupo = $('quadro')?.querySelector('.q-cores');
+    if (!grupo) return;
+    const n = noParaColorir(), ativa = n ? (coresNo(n)?.fundo || 'inherit') : corCaneta;
+    grupo.setAttribute('aria-label', n ? 'Cor de fundo do elemento selecionado' : 'Cor da caneta');
+    grupo.querySelectorAll('[data-cor]').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.cor === ativa));
+      b.title = b.dataset.cor === 'inherit'
+        ? (n ? 'Restaurar fundo padrão' : 'Caneta padrão (preta no tema claro, branca no escuro)')
+        : `${n ? 'Fundo' : 'Caneta'}: ${b.getAttribute('aria-label')}`;
+    });
+  }
   function tamanho(e, n) {
     if (n.w) { e.style.width = n.w + 'px'; e.style.minWidth = '0'; e.style.maxWidth = 'none'; }
     if (n.h) { e.style.height = n.h + 'px'; e.style.minHeight = '0'; }
@@ -199,6 +224,8 @@
       e.className = `qn ${n.tipo}${sel && sel.tipo === 'no' && sel.id === n.id ? ' sel' : ''}`;
       e.dataset.id = n.id;
       e.style.left = n.x + 'px'; e.style.top = n.y + 'px';
+      const cores = coresNo(n);
+      if (cores) { e.style.setProperty('--q-fundo', cores.fundo); e.style.setProperty('--q-texto', cores.texto); }
       if (FORMAS[n.tipo]) e.insertAdjacentHTML('afterbegin', `<svg class="qf" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="${FORMAS[n.tipo]}"/></svg>`);
       tamanho(e, n);
       const t = document.createElement('div');
@@ -506,14 +533,22 @@
         $(id).classList.toggle('on', ativo); $(id).setAttribute('aria-pressed', String(ativo));
       });
       tela.classList.toggle('caneta', caneta); tela.classList.toggle('borracha', borracha);
+      atualizaCores();
     };
     $('qCaneta').onclick = () => modo('caneta');
     $('qSelecionar').onclick = () => modo('selecionar');
     const cores = $('quadro').querySelectorAll('[data-cor]');
     cores.forEach(b => { b.onclick = () => {
+      const n = noParaColorir();
+      if (n) {
+        const cor = b.dataset.cor;
+        if ((coresNo(n)?.fundo || 'inherit') === cor) return;
+        foto();
+        if (cor === 'inherit') delete n.cor; else n.cor = cor;
+        desenhar(); salvar(); return;
+      }
       corCaneta = b.dataset.cor;
-      cores.forEach(c => c.setAttribute('aria-pressed', String(c === b)));
-      if (!caneta) modo('caneta');
+      modo('caneta');
     }; });
     $('qBorracha').onclick = () => modo('borracha');
     $('qApagar').onclick = apaga;
@@ -540,6 +575,7 @@
   window.Quadro = {
     aoMudar: null, aoVista: null, aoApagar: null,
     sairFoco: () => foco(false, false),
+    coresNo,
     apagaTraco,
     abrir() {
       montar();
